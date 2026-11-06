@@ -37,5 +37,3 @@ The default program computes `16 + 20 + 18 − 31 = 23` and shows `0001 0111` on
 
 > **ROM paths:** the 2764 parts point to `C:\users\<you>\Documents\SAP1 Proteus\*.BIN`. If you clone this repo somewhere else, double-click U4, U20 and U21 and update **Image File**.
 
----
-Assisted by Codex and Claude. #AIAssisted
