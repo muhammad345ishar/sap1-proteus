@@ -1,0 +1,401 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SAP-1 Chip Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: chip selector rail, then one chip at a time: real DIP pinout on the left, explanation + live simulator on the right */
+:root {
+  --bg: #e9edeb; --panel: #ffffff; --ink: #18232b; --muted: #5b6a72; --line: #c6cfd2;
+  --pkg: #23282c; --pkgtext: #e8ecee; --leg: #b8bfc4;
+  --in: #2f5fd0; --out: #c2410c; --ctl: #6a3fd0; --clk: #0d8a7a; --pwr: #7a868c; --addr: #a1650f;
+  --hi: #d42a1a; --lo: #2a3fd4; --z: #9aa2a6; --copper: #c26d12;
+  --f-display: "Chakra Petch", "Bahnschrift", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #161f25; --ink: #e2e9ee; --muted: #8e9ca5; --line: #2c3a43;
+  --pkg: #0a0d0f; --pkgtext: #d9dfe2; --leg: #6f7a80;
+  --in: #7d9bff; --out: #ff9157; --ctl: #ae97ff; --clk: #3fc8b6; --pwr: #7f8b91; --addr: #e7b04f;
+  --hi: #ff5a44; --lo: #6f8cff; --z: #5d686e; --copper: #f0a542; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #161f25; --ink: #e2e9ee; --muted: #8e9ca5; --line: #2c3a43;
+  --pkg: #0a0d0f; --pkgtext: #d9dfe2; --leg: #6f7a80;
+  --in: #7d9bff; --out: #ff9157; --ctl: #ae97ff; --clk: #3fc8b6; --pwr: #7f8b91; --addr: #e7b04f;
+  --hi: #ff5a44; --lo: #6f8cff; --z: #5d686e; --copper: #f0a542; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 26px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--f-display); font-size: clamp(28px, 4.6vw, 42px); line-height: 1.05; margin: 4px 0 6px; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+.rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rail button { text-align: left; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; display: grid; gap: 2px; }
+.rail button:hover { border-color: var(--copper); }
+.rail button[aria-selected="true"] { background: var(--pkg); color: var(--pkgtext); border-color: var(--pkg); }
+.rail .pn { font: 700 19px var(--f-display); letter-spacing: .02em; }
+.rail .what { font-size: 13px; opacity: .8; }
+.rail .cnt { font: 500 11.5px var(--f-mono); opacity: .7; }
+button:focus-visible { outline: 2px solid var(--ctl); outline-offset: 2px; }
+
+.chip { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 900px) { .chip { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 18px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 10px; min-width: 0; }
+.card h2 { font: 700 26px var(--f-display); margin: 0; letter-spacing: .01em; }
+.card h3 { font: 600 16px var(--f-display); margin: 0; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+.card p { margin: 0; max-width: 66ch; }
+.tagline { color: var(--muted); margin-top: -4px; }
+ul.how { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.pinwrap { overflow-x: auto; }
+.pinout svg { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto; }
+.pkg { fill: var(--pkg); }
+.leg { fill: var(--leg); }
+.pinname { font: 600 13px var(--f-mono); fill: var(--pkgtext); }
+.pinnum { font: 500 11px var(--f-mono); fill: var(--muted); }
+.pinhit { cursor: pointer; }
+.pinhit:hover .leg, .pinhit.sel .leg { fill: var(--copper); }
+.pinhit.sel .pinname { fill: var(--copper); }
+.pkgtitle { font: 700 22px var(--f-display); fill: var(--pkgtext); letter-spacing: .06em; }
+.pkgsub { font: 500 11px var(--f-mono); fill: var(--leg); }
+.roledot { stroke: none; }
+.pininfo { font-size: 14px; min-height: 66px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pininfo b { font-family: var(--f-mono); }
+.keyrow { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); }
+.keyrow i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; width: 100%; }
+th { text-align: left; font-weight: 600; font-size: 11.5px; color: var(--muted); padding: 5px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 5px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.note { font-family: var(--f-body); white-space: normal; min-width: 180px; }
+.uses td:first-child { font-weight: 600; color: var(--copper); }
+
+/* simulator */
+.sim { display: grid; gap: 12px; }
+.simrow { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.grp { display: grid; gap: 4px; }
+.grp > small { font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.bits { display: flex; gap: 4px; flex-wrap: wrap; }
+.bit { font: 600 13px var(--f-mono); min-width: 40px; padding: 6px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; display: grid; justify-items: center; line-height: 1.15; }
+.bit span { font-size: 10px; font-weight: 500; color: var(--muted); }
+.bit.h { background: var(--hi); border-color: var(--hi); color: #fff; } .bit.h span { color: #fff; opacity: .85; }
+.bit.l { background: var(--lo); border-color: var(--lo); color: #fff; } .bit.l span { color: #fff; opacity: .85; }
+.bit.z { background: var(--bg); color: var(--z); border-style: dashed; }
+.bit.ro { cursor: default; }
+.act { font: 600 14px var(--f-body); color: #fff; background: var(--clk); border: 0; border-radius: 7px; padding: 9px 14px; cursor: pointer; }
+.act.alt { background: var(--copper); }
+.readout { font-family: var(--f-mono); font-size: 13.5px; background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.readout b { color: var(--copper); }
+select, input[type=range] { font: 500 13px var(--f-mono); accent-color: var(--copper); }
+select { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.memmap td.on { background: color-mix(in srgb, var(--copper) 22%, transparent); }
+.flash { animation: fl .5s ease-out; }
+@keyframes fl { from { box-shadow: 0 0 0 6px color-mix(in srgb, var(--clk) 45%, transparent); } to { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">SAP-1 · the five chip types that aren't plain gates</div>
+    <h1>Chip field guide</h1>
+    <p class="lede">Every non-gate IC in your Proteus SAP-1, with its real DIP pinout, what each pin does, how it behaves, and where it sits in your circuit. Pick a chip, hover or tap a pin, then operate the chip in its simulator.</p>
+  </header>
+  <nav class="rail" role="tablist" aria-label="Chips" id="rail"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const ROLE = {in:'data input', out:'output', ctl:'control', clk:'clock', pwr:'power', addr:'address'};
+const ROLECOL = {in:'var(--in)', out:'var(--out)', ctl:'var(--ctl)', clk:'var(--clk)', pwr:'var(--pwr)', addr:'var(--addr)'};
+
+/* ---------- SAP-1 program + microcode (same as your ROM files) ---------- */
+const PROG = new Array(16).fill(0);
+Object.entries({0:0x09,1:0x1A,2:0x1B,3:0x2C,4:0xE0,5:0xF0,9:16,10:20,11:18,12:31}).forEach(([a, v]) => PROG[a] = v);
+const PMEAN = a => ({0:'LDA 9',1:'ADD A',2:'ADD B',3:'SUB C',4:'OUT',5:'HLT',9:'data 16',10:'data 20',11:'data 18',12:'data 31'})[a] || 'empty';
+const FETCH = [['EP','LM'],['CP'],['CE','LI']];
+const OPS = {0:[['LM','EI'],['CE','LA'],[]], 1:[['LM','EI'],['CE','LB'],['LA','EU']], 2:[['LM','EI'],['CE','LB'],['LA','SU','EU']], 14:[['EA','LO'],[],[]], 15:[['HLT'],[],[]]};
+const R1 = ['HLT','CP','EP','LM','CE','LI','EI','LA'], R2 = ['EA','SU','EU','LB','LO'];
+const HIGHACT = new Set(['CP','SU']);
+function ctrlByte(rom, op, step) {
+  const act = step < 3 ? FETCH[step] : step < 6 ? ((OPS[op] || [[],[],[]])[step - 3]) : [];
+  const names = rom === 1 ? R1 : R2; let v = 0;
+  names.forEach((n, i) => { const on = act.includes(n); if (HIGHACT.has(n) ? on : !on) v |= 1 << i; });
+  return v;
+}
+const SIGNICE = {HLT:'nHLT',CP:'Cp',EP:'Ēp',LM:'L̄m',CE:'C̄E',LI:'L̄i',EI:'Ēi',LA:'L̄a',EA:'Ēa',SU:'Su',EU:'Ēu',LB:'L̄b',LO:'L̄o'};
+const OPNAME = {0:'LDA',1:'ADD',2:'SUB',14:'OUT',15:'HLT'};
+const hex = (v, n = 2) => v.toString(16).toUpperCase().padStart(n, '0');
+const bin = (v, n = 8) => v.toString(2).padStart(n, '0');
+
+/* ---------- helpers for simulators ---------- */
+function bitBtn(label, get, set, extra = '') {
+  const b = $(`<button class="bit" type="button" aria-label="${label}">${''}</button>`);
+  const paint = () => { const v = get(); b.className = 'bit ' + (v === null ? 'z' : v ? 'h' : 'l') + ' ' + extra; b.innerHTML = `${v === null ? 'Z' : v}<span>${label}</span>`; };
+  if (set) b.onclick = () => { set(get() ? 0 : 1); refreshAll(); };
+  else b.classList.add('ro');
+  b._paint = paint; paints.push(paint); return b;
+}
+let paints = [];
+const refreshAll = () => paints.forEach(p => p());
+function group(title, nodes) { const g = $(`<div class="grp"><small>${title}</small><div class="bits"></div></div>`); nodes.forEach(n => g.lastChild.appendChild(n)); return g; }
+const flash = el => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
+
+/* ---------- chip data ---------- */
+const CHIPS = [
+{
+  id:'ls173', part:'74LS173', what:'4-bit register', title:'74LS173 · Quad D flip-flop with 3-state outputs',
+  tag:'Stores 4 bits. Loads on a clock edge only when told to, and can disconnect its outputs.',
+  pins:[[1,'M','ctl','Output disable #1 (Proteus calls it OE1). Low = outputs on. High = outputs float (Z).'],[2,'N','ctl','Output disable #2 (OE2). Both M and N must be low for the outputs to drive.'],
+        [3,'1Q','out','Output of flip-flop 1.'],[4,'2Q','out','Output of flip-flop 2.'],[5,'3Q','out','Output of flip-flop 3.'],[6,'4Q','out','Output of flip-flop 4.'],
+        [7,'CLK','clk','Clock. Data is captured on the rising edge (0 → 1).'],[8,'GND','pwr','Ground, 0 V.'],
+        [9,'~G1','ctl','Data enable #1 (Proteus E1), active low. Both G1 and G2 low = load on the next clock.'],[10,'~G2','ctl','Data enable #2 (E2), active low.'],
+        [11,'4D','in','Data input 4.'],[12,'3D','in','Data input 3.'],[13,'2D','in','Data input 2.'],[14,'1D','in','Data input 1.'],
+        [15,'CLR','ctl','Clear (Proteus MR), active high. Forces all four bits to 0 immediately.'],[16,'VCC','pwr','+5 V supply.']],
+  sapnet:{1:'GND (U6: nEI)',2:'GND (U6: nEI)',7:'CLKG',9:'nLM / nLI / nLA / nLB / nLO',10:'same as pin 9',15:'RESET',3:'MA0, OP0, A0, B0, OUT0…',14:'W0 or W4'},
+  about:'Inside are four D flip-flops sharing one clock. A flip-flop copies its D input to Q at the moment the clock rises, then holds it. The two G pins gate that: if either is high, the clock edge is ignored and the old value stays. The M and N pins control a tri-state output buffer, so the chip can sit on a shared bus without fighting the other chips.',
+  how:['Set the data on 1D–4D.','Pull G1 and G2 low (this is what L̄a, L̄b, L̄m… do).','On the next rising clock edge, the data is stored.','Keep M and N low to see it on 1Q–4Q, or high to disconnect.'],
+  table:{head:['CLR','~G1','~G2','CLK','Q (next)'], rows:[['1','x','x','x','0000 (cleared)'],['0','1','x','↑','no change'],['0','x','1','↑','no change'],['0','0','0','↑','D (loaded)'],['0','x','x','0 / 1','no change']]},
+  uses:[['U3','MAR, latches the address from W0–W3 on L̄m'],['U5','IR upper half, latches the opcode on L̄i'],['U6','IR lower half; its outputs go back on the bus when Ēi is low'],['U7 · U8','Accumulator A (low and high nibble), loads on L̄a'],['U10 · U11','B register, loads on L̄b'],['U17 · U18','Output register, loads on L̄o']],
+  sim:(box) => {
+    const s = {d:[1,0,1,1], g:0, mn:0, clr:0, q:[0,0,0,0]};
+    const qBtns = [0,1,2,3].map(i => bitBtn(i+1+'Q', () => s.mn ? null : s.q[i]));
+    const clk = $(`<button class="act" type="button">Clock ↑</button>`);
+    const out = $(`<div class="readout"></div>`);
+    const say = () => out.innerHTML = s.clr ? 'CLR is high: Q is forced to <b>0000</b>.' : s.mn ? 'M/N high: outputs are <b>floating (Z)</b>. The stored value is still inside: ' + s.q.slice().reverse().join('') : `Stored value (4Q…1Q): <b>${s.q.slice().reverse().join('')}</b>`;
+    paints.push(say);
+    clk.onclick = () => { if (!s.clr && !s.g) { s.q = s.d.slice(); qBtns.forEach(flash); } refreshAll(); };
+    box.append(
+      $(`<div class="simrow"></div>`), out);
+    const r = box.firstChild;
+    r.append(group('Data in 4D…1D', [3,2,1,0].map(i => bitBtn(i+1+'D', () => s.d[i], v => s.d[i] = v))),
+             group('~G1/~G2 (load)', [bitBtn('G', () => s.g, v => s.g = v)]),
+             group('M/N (disable out)', [bitBtn('M,N', () => s.mn, v => s.mn = v)]),
+             group('CLR', [bitBtn('CLR', () => s.clr, v => { s.clr = v; if (v) s.q = [0,0,0,0]; })]),
+             group('Clock', [clk]), group('Q 4Q…1Q', [3,2,1,0].map(i => qBtns[i])));
+  }
+},
+{
+  id:'ls161', part:'74LS161', what:'4-bit counter', title:'74LS161 · Synchronous 4-bit binary counter',
+  tag:'Counts 0 to 15 on each clock edge. Can be cleared, loaded with a value, or paused.',
+  pins:[[1,'~CLR','ctl','Clear, active low (Proteus MR). Low = count goes to 0000 immediately.'],[2,'CLK','clk','Clock. Counts (or loads) on the rising edge.'],
+        [3,'A','in','Preset data bit 0 (D0), used only when LOAD is low.'],[4,'B','in','Preset data bit 1 (D1).'],[5,'C','in','Preset data bit 2 (D2).'],[6,'D','in','Preset data bit 3 (D3).'],
+        [7,'ENP','ctl','Count enable P. Both ENP and ENT high = count.'],[8,'GND','pwr','Ground.'],[9,'~LOAD','ctl','Load, active low. Low = copy A–D into the counter on the next clock.'],
+        [10,'ENT','ctl','Count enable T. Also enables the RCO output.'],[11,'QD','out','Count bit 3 (MSB).'],[12,'QC','out','Count bit 2.'],[13,'QB','out','Count bit 1.'],[14,'QA','out','Count bit 0 (LSB).'],
+        [15,'RCO','out','Ripple carry out: high when the count is 1111 and ENT is high. Used to chain counters.'],[16,'VCC','pwr','+5 V supply.']],
+  sapnet:{1:'nRESET (U1) / nCLRSTEP (U19)',2:'CLKG (U1) / nCLKG (U19)',7:'CP (U1) / VCC (U19)',10:'CP (U1) / VCC (U19)',9:'VCC (never loads)',3:'GND',14:'PC0 / S0',13:'PC1 / S1',12:'PC2 / S2',11:'PC3'},
+  about:'Four flip-flops wired as a binary counter, all clocked together (that is what "synchronous" means). Each rising clock edge adds 1 if both enable pins are high. The clear input is asynchronous on the 74LS161: it acts at once, without waiting for the clock. That is exactly how U19 snaps back to T1: the moment its count reaches 6, the NAND gate pulls ~CLR low.',
+  how:['Keep ~CLR and ~LOAD high.','Hold ENP and ENT high to count; drop either to pause.','Each rising clock edge adds 1 (15 rolls over to 0).','Pull ~CLR low at any time to go back to 0.'],
+  table:{head:['~CLR','~LOAD','ENP','ENT','CLK','Result'], rows:[['0','x','x','x','x','0000 at once'],['1','0','x','x','↑','load A–D'],['1','1','1','1','↑','count + 1'],['1','1','0','x','↑','hold'],['1','1','x','0','↑','hold']]},
+  uses:[['U1','Program counter. Counts up when Cp is high (T2 of every instruction). Cleared by reset.'],['U19','T-state counter. Always counting on the inverted clock; cleared at step 6 by U24 + U22:B.']],
+  sim:(box) => {
+    const s = {clr:1, load:1, enp:1, ent:1, d:[1,0,1,0], q:0};
+    const qb = [3,2,1,0].map(i => bitBtn('Q'+'ABCD'[i], () => (s.q >> i) & 1));
+    const rco = bitBtn('RCO', () => +(s.q === 15 && s.ent));
+    const out = $(`<div class="readout"></div>`);
+    paints.push(() => out.innerHTML = `Count = <b>${bin(s.q, 4)}</b> = <b>${s.q}</b>` + (s.q === 15 && s.ent ? ' · RCO is high (would carry into a next counter)' : ''));
+    const clk = $(`<button class="act" type="button">Clock ↑</button>`);
+    clk.onclick = () => { if (s.clr) { if (!s.load) s.q = s.d[0] | s.d[1] << 1 | s.d[2] << 2 | s.d[3] << 3; else if (s.enp && s.ent) s.q = (s.q + 1) & 15; } qb.forEach(flash); refreshAll(); };
+    const row = $(`<div class="simrow"></div>`);
+    row.append(group('~CLR', [bitBtn('CLR', () => s.clr, v => { s.clr = v; if (!v) s.q = 0; })]), group('~LOAD', [bitBtn('LOAD', () => s.load, v => s.load = v)]),
+      group('Enables', [bitBtn('ENP', () => s.enp, v => s.enp = v), bitBtn('ENT', () => s.ent, v => s.ent = v)]),
+      group('Preset D C B A', [3,2,1,0].map(i => bitBtn('ABCD'[i], () => s.d[i], v => s.d[i] = v))), group('Clock', [clk]), group('QD…QA', qb.concat([rco])));
+    box.append(row, out);
+  }
+},
+{
+  id:'ls245', part:'74LS245', what:'Bus transceiver', title:'74LS245 · Octal bus transceiver with 3-state outputs',
+  tag:'Eight one-way switches between two 8-bit buses. Connects them, in a chosen direction, or isolates them.',
+  pins:[[1,'DIR','ctl','Direction. High = A drives B. Low = B drives A. (Proteus: AB/BA.)'],[2,'A1','in','A side bit 1.'],[3,'A2','in','A side bit 2.'],[4,'A3','in','A side bit 3.'],[5,'A4','in','A side bit 4.'],
+        [6,'A5','in','A side bit 5.'],[7,'A6','in','A side bit 6.'],[8,'A7','in','A side bit 7.'],[9,'A8','in','A side bit 8.'],[10,'GND','pwr','Ground.'],
+        [11,'B8','out','B side bit 8.'],[12,'B7','out','B side bit 7.'],[13,'B6','out','B side bit 6.'],[14,'B5','out','B side bit 5.'],[15,'B4','out','B side bit 4.'],[16,'B3','out','B side bit 3.'],[17,'B2','out','B side bit 2.'],[18,'B1','out','B side bit 1.'],
+        [19,'~OE','ctl','Output enable, active low (Proteus CE). High = both sides float (Z), nothing passes.'],[20,'VCC','pwr','+5 V supply.']],
+  sapnet:{1:'VCC (always A → B)',19:'nEP (U2) / nEA (U9) / nEU (U16)',2:'PC0 / A0 / SUM0',18:'W0',11:'W7'},
+  about:'A transceiver is a set of buffers that can face either way. The 74LS245 has eight of them. With ~OE high the chip is invisible to both buses. With ~OE low it copies one side to the other. On a shared bus only one chip may drive at a time, and this enable pin is how the controller picks who talks. In the SAP-1, DIR is tied high, so data only ever flows from a register (A side) onto the W bus (B side).',
+  how:['Tie DIR for the direction you need (SAP-1: high, A → B).','Keep ~OE high while another chip uses the bus.','Pull ~OE low for one T-state to put your data on the bus.'],
+  table:{head:['~OE','DIR','What happens'], rows:[['0','1','A → B (A drives the bus)'],['0','0','B → A'],['1','x','isolated, both sides Z']]},
+  uses:[['U2','Puts the PC (PC0–PC3) on W0–W3 when Ēp is low. Upper 4 inputs tied to GND.'],['U9','Puts the accumulator on the bus when Ēa is low (OUT instruction).'],['U16','Puts the adder result on the bus when Ēu is low (ADD / SUB, T6).']],
+  sim:(box) => {
+    const s = {a:[1,1,0,1,0,0,1,0], b:[0,1,1,0,0,1,0,1], oe:0, dir:1};
+    const val = (side, i) => s.oe ? (side === 'B' && s.dir ? null : side === 'A' && !s.dir ? null : s[side.toLowerCase()][i])
+                               : (side === 'B' ? (s.dir ? s.a[i] : s.b[i]) : (s.dir ? s.a[i] : s.b[i]));
+    const mk = side => [7,6,5,4,3,2,1,0].map(i => {
+      const drv = () => (side === 'A') === !!s.dir;
+      return bitBtn(side + (i+1), () => (s.oe && !drv()) ? null : val(side, i), v => { if (drv()) s[side.toLowerCase()][i] = v; });
+    });
+    const out = $(`<div class="readout"></div>`);
+    paints.push(() => out.innerHTML = s.oe ? '~OE is high: the chip is disconnected. Each side keeps whatever other chips put on it.' : s.dir ? `A drives B: B side shows <b>${s.a.slice().reverse().join('')}</b>. Click the A bits to change it.` : `B drives A: A side shows <b>${s.b.slice().reverse().join('')}</b>. Click the B bits.`);
+    const row = $(`<div class="simrow"></div>`);
+    row.append(group('~OE', [bitBtn('OE', () => s.oe, v => s.oe = v)]), group('DIR', [bitBtn('DIR', () => s.dir, v => s.dir = v)]));
+    box.append(row, group('A side A8…A1', mk('A')), group('B side B8…B1 (the W bus in SAP-1)', mk('B')), out);
+  }
+},
+{
+  id:'ls283', part:'74LS283', what:'4-bit adder', title:'74LS283 · 4-bit binary full adder with fast carry',
+  tag:'Adds two 4-bit numbers plus a carry-in. Two of them make an 8-bit adder.',
+  pins:[[1,'Σ2','out','Sum bit 2 (Proteus S1).'],[2,'B2','in','B input bit 2.'],[3,'A2','in','A input bit 2.'],[4,'Σ1','out','Sum bit 1 (S0).'],[5,'A1','in','A input bit 1.'],[6,'B1','in','B input bit 1.'],
+        [7,'C0','ctl','Carry in. Adds 1 to the result when high.'],[8,'GND','pwr','Ground.'],[9,'C4','out','Carry out. High when the sum is 16 or more.'],[10,'Σ4','out','Sum bit 4 (S3).'],
+        [11,'B4','in','B input bit 4.'],[12,'A4','in','A input bit 4.'],[13,'Σ3','out','Sum bit 3 (S2).'],[14,'A3','in','A input bit 3.'],[15,'B3','in','B input bit 3.'],[16,'VCC','pwr','+5 V supply.']],
+  sapnet:{7:'SU (U14) / CARRY (U15)',9:'CARRY (U14 → U15)',5:'A0 / A4',6:'XB0 / XB4',4:'SUM0 / SUM4'},
+  about:'Pure combinational logic, no clock. The output always shows A + B + C0, a few nanoseconds after any input changes. "Fast carry" means it computes the carries in parallel (look-ahead) instead of letting them ripple bit by bit. In the SAP-1 two adders are chained: the low one\'s C4 feeds the high one\'s C0. For subtraction, the XOR gates invert B and C0 is set to 1, which together form the two\'s complement: A + (~B + 1) = A − B.',
+  how:['Put A on A1–A4 and B on B1–B4.','Set C0 (0 to add, 1 to add one more).','Read Σ1–Σ4 immediately; C4 is the overflow bit.'],
+  table:{head:['A','B','C0','Σ','C4'], rows:[['0101 (5)','0011 (3)','0','1000 (8)','0'],['1100 (12)','0110 (6)','0','0010 (2)','1  → 18'],['0111 (7)','1100 (~3)','1','0100 (4)','1  → 7 − 3'],['1111 (15)','0000 (0)','1','0000 (0)','1  → 16']]},
+  uses:[['U14','Low nibble: A0–A3 + XB0–XB3 + SU. Its C4 is the CARRY net.'],['U15','High nibble: A4–A7 + XB4–XB7 + CARRY. Its C4 is not used.'],['with U12 · U13','The 74LS86 XOR gates in front of B: they pass B when SU = 0 and invert it when SU = 1.']],
+  sim:(box) => {
+    const s = {a:9, b:6, c0:0, sub:false};
+    const out = $(`<div class="readout"></div>`);
+    const mkStep = (k, label) => { const r = $(`<label class="grp"><small>${label}</small><input type="range" min="0" max="15" step="1" id="adder-${k}"></label>`); const inp = r.querySelector('input'); inp.value = s[k]; inp.oninput = () => { s[k] = +inp.value; refreshAll(); }; return r; };
+    const subBtn = $(`<button class="act alt" type="button"></button>`);
+    subBtn.onclick = () => { s.sub = !s.sub; s.c0 = s.sub ? 1 : 0; refreshAll(); };
+    paints.push(() => {
+      const bb = s.sub ? (~s.b) & 15 : s.b, sum = s.a + bb + s.c0, S = sum & 15, C4 = sum >> 4;
+      subBtn.textContent = s.sub ? 'Mode: subtract (A − B)' : 'Mode: add (A + B)';
+      out.innerHTML = `A = ${bin(s.a,4)} (${s.a})<br>B into adder = ${bin(bb,4)}${s.sub ? ` (B = ${s.b} inverted by the XOR gates)` : ` (${s.b})`}<br>C0 = ${s.c0}<br>Σ = <b>${bin(S,4)}</b> (${S}), C4 = <b>${C4}</b>` +
+        (s.sub ? `<br>${s.a} − ${s.b} = ${s.a - s.b} → ${s.a >= s.b ? 'C4 = 1 means no borrow' : 'C4 = 0 means borrow: the result wrapped to ' + S}` : `<br>${s.a} + ${s.b} + ${s.c0} = ${s.a + s.b + s.c0}${C4 ? ' (over 15, so C4 carries the 16)' : ''}`);
+    });
+    const row = $(`<div class="simrow"></div>`);
+    row.append(mkStep('a', 'A (0–15)'), mkStep('b', 'B (0–15)'), group('C0', [bitBtn('C0', () => s.c0, v => s.c0 = v)]), subBtn);
+    box.append(row, out);
+  }
+},
+{
+  id:'eprom2764', part:'2764', what:'8K × 8 EPROM', title:'2764 · 64 Kbit (8K × 8) UV-erasable EPROM',
+  tag:'A lookup table: give it an address, it gives back the byte stored there.',
+  pins:[[1,'VPP','pwr','Programming voltage (12.5 V while burning). Tie to VCC when reading.'],[2,'A12','addr','Address bit 12.'],[3,'A7','addr','Address bit 7.'],[4,'A6','addr','Address bit 6.'],[5,'A5','addr','Address bit 5.'],[6,'A4','addr','Address bit 4.'],
+        [7,'A3','addr','Address bit 3.'],[8,'A2','addr','Address bit 2.'],[9,'A1','addr','Address bit 1.'],[10,'A0','addr','Address bit 0.'],[11,'O0','out','Data out bit 0 (Proteus D0).'],[12,'O1','out','Data out bit 1.'],[13,'O2','out','Data out bit 2.'],[14,'GND','pwr','Ground.'],
+        [15,'O3','out','Data out bit 3.'],[16,'O4','out','Data out bit 4.'],[17,'O5','out','Data out bit 5.'],[18,'O6','out','Data out bit 6.'],[19,'O7','out','Data out bit 7.'],
+        [20,'~CE','ctl','Chip enable, active low. High = chip asleep, outputs float.'],[21,'A10','addr','Address bit 10.'],[22,'~OE','ctl','Output enable, active low. Low = put the byte on O0–O7.'],
+        [23,'A11','addr','Address bit 11.'],[24,'A9','addr','Address bit 9.'],[25,'A8','addr','Address bit 8.'],[26,'NC','pwr','Not connected.'],[27,'~PGM','ctl','Program strobe, active low. Tie high when reading.'],[28,'VCC','pwr','+5 V supply.']],
+  sapnet:{10:'MA0 (U4) / S0 (U20, U21)',9:'MA1 / S1',8:'MA2 / S2',7:'MA3 / OP0',6:'GND (U4) / OP1',5:'GND / OP2',4:'GND / OP3',20:'GND (always enabled)',22:'nCE (U4) / GND (U20, U21)',1:'VCC',27:'VCC',11:'W0 (U4) / nHLT (U20) / nEA (U21)'},
+  about:'13 address lines select one of 8192 bytes; 8 data lines return it. Reading is combinational: change the address and the new byte appears about 150 ns later (the "Address Access Time" property you saw in Proteus). Data is written once by a programmer and erased with UV light through the quartz window. In Proteus the contents come from your .BIN image file. The SAP-1 uses only the first 16 bytes (U4) or 128 bytes (U20, U21).',
+  how:['Tie VPP and ~PGM high (read mode).','Set the address on A0–A12.','Pull ~CE and ~OE low; the byte appears on O0–O7.','Raise ~OE to release the bus (U4 does this whenever C̄E is inactive).'],
+  table:{head:['~CE','~OE','Mode','O0–O7'], rows:[['0','0','read','stored byte'],['0','1','output disable','Z'],['1','x','standby','Z'],['0','1 + VPP 12.5 V, ~PGM pulse','program','input']]},
+  uses:[['U4','Program memory. Address = MAR (MA0–MA3). Drives W0–W7 when C̄E is low. Image: PROGRAM_ROM.BIN.'],['U20','Control ROM 1. Address = step (S0–S2) + opcode (OP0–OP3). Outputs nHLT, Cp, Ēp, L̄m, C̄E, L̄i, Ēi, L̄a.'],['U21','Control ROM 2. Same address. Outputs Ēa, Su, Ēu, L̄b, L̄o.']],
+  sim:(box) => {
+    const s = {rom:'prog', addr:0, op:0, step:0, ce:0, oe:0};
+    const sel = $(`<select id="rom-sel"><option value="prog">U4 · PROGRAM_ROM.BIN</option><option value="c1">U20 · CONTROL_ROM1.BIN</option><option value="c2">U21 · CONTROL_ROM2.BIN</option></select>`);
+    sel.onchange = () => { s.rom = sel.value; build(); refreshAll(); };
+    const ctl = $(`<div class="simrow"></div>`);
+    const out = $(`<div class="readout"></div>`), mapBox = $(`<div class="tbl memmap"></div>`);
+    const byte = () => s.rom === 'prog' ? PROG[s.addr] : ctrlByte(s.rom === 'c1' ? 1 : 2, s.op, s.step);
+    const address = () => s.rom === 'prog' ? s.addr : (s.op << 3) | s.step;
+    const dataBits = [7,6,5,4,3,2,1,0].map(i => bitBtn('O' + i, () => (s.ce || s.oe) ? null : (byte() >> i) & 1));
+    function build() {
+      ctl.innerHTML = '';
+      ctl.append($(`<label class="grp"><small>Which ROM</small></label>`));
+      ctl.lastChild.appendChild(sel);
+      if (s.rom === 'prog') {
+        const r = $(`<label class="grp"><small>Address A3–A0 (from the MAR)</small><input type="range" min="0" max="15" id="rom-addr"></label>`);
+        const i = r.querySelector('input'); i.value = s.addr; i.oninput = () => { s.addr = +i.value; refreshAll(); }; ctl.append(r);
+      } else {
+        const o = $(`<label class="grp"><small>Opcode A6–A3</small><select id="rom-op">${[0,1,2,14,15].map(v => `<option value="${v}">${bin(v,4)} ${OPNAME[v]}</option>`).join('')}</select></label>`);
+        const os = o.querySelector('select'); os.value = s.op; os.onchange = () => { s.op = +os.value; refreshAll(); };
+        const st = $(`<label class="grp"><small>Step A2–A0 (T1–T6)</small><input type="range" min="0" max="5" id="rom-step"></label>`);
+        const si = st.querySelector('input'); si.value = s.step; si.oninput = () => { s.step = +si.value; refreshAll(); };
+        ctl.append(o, st);
+      }
+      ctl.append(group('~CE  ~OE', [bitBtn('CE', () => s.ce, v => s.ce = v), bitBtn('OE', () => s.oe, v => s.oe = v)]));
+    }
+    paints.push(() => {
+      const b = byte(), a = address();
+      let txt = `Address ${bin(a, s.rom === 'prog' ? 4 : 7)} (${hex(a)}h) → `;
+      if (s.ce || s.oe) txt += '<b>outputs floating (Z)</b>: ~CE or ~OE is high.';
+      else if (s.rom === 'prog') txt += `<b>${bin(b)}</b> = ${hex(b)}h = ${PMEAN(s.addr)}`;
+      else {
+        const names = s.rom === 'c1' ? R1 : R2;
+        const act = names.filter((n, i) => HIGHACT.has(n) ? (b >> i) & 1 : !((b >> i) & 1));
+        txt += `<b>${bin(b)}</b> = ${hex(b)}h · ${OPNAME[s.op]} T${s.step + 1}: ` + (act.length ? 'active ' + act.map(n => SIGNICE[n]).join(', ') : 'nothing active from this ROM');
+      }
+      out.innerHTML = txt;
+      if (s.rom === 'prog') {
+        mapBox.innerHTML = `<table><thead><tr><th>Addr</th><th>Byte</th><th>Hex</th><th>Meaning</th></tr></thead><tbody>${PROG.map((v, a) => `<tr><td class="${a === s.addr ? 'on' : ''}">${hex(a,1)}</td><td class="${a === s.addr ? 'on' : ''}">${bin(v)}</td><td class="${a === s.addr ? 'on' : ''}">${hex(v)}</td><td class="${a === s.addr ? 'on' : ''}">${PMEAN(a)}</td></tr>`).join('')}</tbody></table>`;
+      } else {
+        const names = s.rom === 'c1' ? R1 : R2;
+        mapBox.innerHTML = `<table><thead><tr><th>Step</th><th>Byte</th>${names.slice().reverse().map(n => `<th>${SIGNICE[n]}</th>`).join('')}</tr></thead><tbody>${[0,1,2,3,4,5].map(t => { const v = ctrlByte(s.rom === 'c1' ? 1 : 2, s.op, t); const on = t === s.step ? 'on' : ''; return `<tr><td class="${on}">T${t+1}</td><td class="${on}">${hex(v)}</td>${names.map((n, i) => [n, i]).reverse().map(([n, i]) => { const act = HIGHACT.has(n) ? (v >> i) & 1 : !((v >> i) & 1); return `<td class="${on}">${act ? '●' : '·'}</td>`; }).join('')}</tr>`; }).join('')}</tbody></table>`;
+      }
+    });
+    build();
+    box.append(ctl, group('Data O7…O0', dataBits), out, mapBox);
+  }
+}];
+
+/* ---------- pinout SVG ---------- */
+function pinoutSVG(c) {
+  const n = c.pins.length, half = n / 2, P = 34, top = 70, bodyW = 150, X0 = 125;
+  const H = top + half * P + 30, Wd = 400;
+  const rows = [];
+  for (let i = 0; i < half; i++) {
+    const L = c.pins[i], R = c.pins[n - 1 - i], y = top + i * P + P / 2;
+    for (const [pin, side] of [[L, 'L'], [R, 'R']]) {
+      const [num, name, role] = pin;
+      const over = name.startsWith('~'), nm = name.replace('~', '');
+      const lx = side === 'L' ? X0 - 34 : X0 + bodyW, tx = side === 'L' ? X0 + 10 : X0 + bodyW - 10;
+      rows.push(`<g class="pinhit" data-pin="${num}" tabindex="0" role="button" aria-label="Pin ${num} ${nm}">
+        <rect class="leg" x="${lx}" y="${y - 7}" width="34" height="14" rx="2"></rect>
+        <circle class="roledot" cx="${side === 'L' ? lx - 12 : lx + 46}" cy="${y}" r="5" fill="${ROLECOL[role]}"></circle>
+        <text class="pinnum" x="${side === 'L' ? lx - 24 : lx + 58}" y="${y + 4}" text-anchor="${side === 'L' ? 'end' : 'start'}">${num}</text>
+        <text class="pinname" x="${tx}" y="${y + 4.5}" text-anchor="${side === 'L' ? 'start' : 'end'}" ${over ? 'text-decoration="overline"' : ''}>${nm}</text>
+      </g>`);
+    }
+  }
+  return `<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="${c.part} pinout">
+    <rect class="pkg" x="${X0}" y="${top - 18}" width="${bodyW}" height="${half * P + 36}" rx="6"></rect>
+    <path d="M${X0 + bodyW / 2 - 14} ${top - 18} a14 14 0 0 0 28 0" fill="var(--bg)"></path>
+    <circle cx="${X0 + 18}" cy="${top + 4}" r="4" fill="var(--leg)"></circle>
+    <text class="pkgtitle" x="${X0 + bodyW / 2}" y="${top + half * P / 2 - 6}" text-anchor="middle" transform="rotate(-90 ${X0 + bodyW / 2} ${top + half * P / 2})">${c.part}</text>
+    <text class="pkgsub" x="${Wd / 2}" y="${top - 30}" text-anchor="middle">DIP-${n} · top view · notch = pin 1 end</text>
+    ${rows.join('')}
+  </svg>`;
+}
+
+/* ---------- render ---------- */
+const rail = document.getElementById('rail'), main = document.getElementById('main');
+CHIPS.forEach(c => {
+  const b = $(`<button role="tab" type="button" id="tab-${c.id}"><span class="pn">${c.part}</span><span class="what">${c.what}</span><span class="cnt">${c.uses.map(u => u[0]).join(' · ').replace(/with /, '')}</span></button>`);
+  b.onclick = () => show(c.id, true); rail.appendChild(b);
+});
+function show(id, push) {
+  const c = CHIPS.find(x => x.id === id) || CHIPS[0];
+  [...rail.children].forEach((b, i) => b.setAttribute('aria-selected', CHIPS[i] === c));
+  paints = [];
+  const el = $(`<section class="chip" id="${c.id}">
+    <div class="col">
+      <div class="card pinout"><h3>Pinout</h3><div class="pinwrap">${pinoutSVG(c)}</div>
+        <div class="keyrow">${Object.entries(ROLE).filter(([r]) => c.pins.some(p => p[2] === r)).map(([r, t]) => `<span><i style="background:${ROLECOL[r]}"></i>${t}</span>`).join('')}</div>
+        <div class="pininfo" id="pininfo">Hover or tap a pin to see what it does.</div>
+      </div>
+      <div class="card"><h3>In your SAP-1</h3><div class="tbl"><table class="uses"><tbody>${c.uses.map(([u, t]) => `<tr><td>${u}</td><td class="note">${t}</td></tr>`).join('')}</tbody></table></div></div>
+    </div>
+    <div class="col">
+      <div class="card"><h2>${c.title}</h2><p class="tagline">${c.tag}</p><p>${c.about}</p>
+        <h3>Using it</h3><ul class="how">${c.how.map(h => `<li>${h}</li>`).join('')}</ul></div>
+      <div class="card"><h3>Try it</h3><div class="sim" id="sim"></div></div>
+      <div class="card"><h3>Function table</h3><div class="tbl"><table><thead><tr>${c.table.head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${c.table.rows.map(r => `<tr>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+        <p class="tagline" style="margin:0;font-size:13px">x = doesn't matter · ↑ = rising clock edge · Z = high impedance (disconnected)</p></div>
+    </div></section>`);
+  main.replaceChildren(el);
+  c.sim(el.querySelector('#sim'));
+  const info = el.querySelector('#pininfo');
+  el.querySelectorAll('.pinhit').forEach(g => {
+    const pick = () => {
+      el.querySelectorAll('.pinhit').forEach(x => x.classList.remove('sel')); g.classList.add('sel');
+      const p = c.pins.find(x => x[0] === +g.dataset.pin);
+      const net = c.sapnet[p[0]];
+      info.innerHTML = `<b>Pin ${p[0]} · ${p[1].replace('~', '')}</b> <span style="color:${ROLECOL[p[2]]}">● ${ROLE[p[2]]}</span><br>${p[3]}` + (net ? `<br><span style="color:var(--muted)">In your circuit: <b>${net}</b></span>` : '');
+    };
+    g.addEventListener('mouseenter', pick); g.addEventListener('click', pick); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+  });
+  refreshAll();
+  if (push) try { history.replaceState(null, '', '#' + c.id); } catch (e) {}
+}
+show((location.hash || '').slice(1));
+})();
+</script>
+
+</body></html>

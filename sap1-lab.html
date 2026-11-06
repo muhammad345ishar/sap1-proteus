@@ -1,0 +1,523 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SAP-1 Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: mode switch + lessons on top; live machine diagram (click the control pins) beside the controller; then adder bit view and memory editor */
+:root {
+  --bg: #e8edea; --panel: #ffffff; --ink: #17222a; --muted: #5b6a72; --line: #c5ced1; --block: #f6f8f8;
+  --copper: #c26d12; --copper-soft: #f7e4cd; --ctrl: #6a3fd0; --ctrl-soft: #e9e2fd; --teal: #0d8a7a; --teal-soft: #d3eeea;
+  --hi: #d42a1a; --lo: #2a3fd4; --z: #a3abaf; --warn: #b42318; --warn-soft: #fde4e1; --off: #d3dbde;
+  --f-display: "Chakra Petch", "Bahnschrift", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #161f25; --ink: #e2e9ee; --muted: #8e9ca5; --line: #2c3a43; --block: #1b252c;
+  --copper: #f0a542; --copper-soft: #3a2a14; --ctrl: #ab95ff; --ctrl-soft: #2a2350; --teal: #3fc8b6; --teal-soft: #123a35;
+  --hi: #ff5a44; --lo: #6f8cff; --z: #5d686e; --warn: #ff7a6b; --warn-soft: #3b1714; --off: #2a3640; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #161f25; --ink: #e2e9ee; --muted: #8e9ca5; --line: #2c3a43; --block: #1b252c;
+  --copper: #f0a542; --copper-soft: #3a2a14; --ctrl: #ab95ff; --ctrl-soft: #2a2350; --teal: #3fc8b6; --teal-soft: #123a35;
+  --hi: #ff5a44; --lo: #6f8cff; --z: #5d686e; --warn: #ff7a6b; --warn-soft: #3b1714; --off: #2a3640; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--f-display); font-size: clamp(28px, 4.6vw, 42px); line-height: 1.05; margin: 4px 0 6px; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 74ch; }
+.lede b { color: var(--ink); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.card h2 { font: 700 20px var(--f-display); margin: 0; letter-spacing: .01em; }
+.card h3 { font: 600 13px var(--f-mono); margin: 0; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.card p { margin: 0; max-width: 70ch; }
+.muted { color: var(--muted); }
+button { font: 600 14px var(--f-body); color: var(--ink); background: var(--block); border: 1px solid var(--line); border-radius: 7px; padding: 7px 13px; cursor: pointer; }
+button:hover { border-color: var(--copper); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--ctrl); outline-offset: 2px; }
+button.primary { background: var(--teal); border-color: var(--teal); color: var(--panel); }
+button.copper { background: var(--copper); border-color: var(--copper); color: var(--panel); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: var(--panel); padding: 9px 14px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.toolbar .grow { flex: 1; }
+.speed { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.speed input { accent-color: var(--copper); width: 100px; }
+
+.lessons { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.lesson { text-align: left; display: grid; gap: 4px; padding: 12px 14px; background: var(--panel); border-radius: 10px; font-weight: 400; }
+.lesson b { font: 700 15px var(--f-display); letter-spacing: .02em; }
+.lesson span { font-size: 13px; color: var(--muted); }
+.lesson[aria-pressed="true"] { border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); }
+.guide { display: grid; gap: 8px; background: var(--teal-soft); border-radius: 10px; padding: 12px 14px; }
+.guide .stepline { font-size: 15px; }
+.guide .stepline .sig { font-family: var(--f-mono); font-weight: 600; color: var(--ctrl); }
+.guide .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.guide small { color: var(--muted); font-family: var(--f-mono); }
+
+.top { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 980px) { .top { grid-template-columns: minmax(0, 1fr); } }
+.stage { overflow-x: auto; }
+svg#m { display: block; width: 100%; min-width: 600px; height: auto; }
+.blk rect.b { fill: var(--block); stroke: var(--line); stroke-width: 1.5; }
+.blk.src rect.b { stroke: var(--copper); stroke-width: 2.5; fill: var(--copper-soft); }
+.blk.dst rect.b { stroke: var(--teal); stroke-width: 2.5; }
+.blk.flash rect.b { fill: var(--teal-soft); }
+.blk .nm { font: 700 14px var(--f-display); fill: var(--ink); }
+.blk .ic { font: 500 9.5px var(--f-mono); fill: var(--muted); }
+.blk .v { font: 600 16px var(--f-mono); fill: var(--ink); }
+.blk .s { font: 500 11px var(--f-mono); fill: var(--muted); }
+.lane { stroke: var(--off); stroke-width: 2.4; }
+.lane.h { stroke: var(--copper); }
+.lane.x { stroke: var(--warn); }
+.link { stroke: var(--line); stroke-width: 2; }
+.link.live { stroke: var(--copper); stroke-width: 3; }
+.dir { stroke: var(--line); stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+.cap { font: 500 10.5px var(--f-mono); fill: var(--muted); }
+.pin { cursor: pointer; }
+.pin rect { fill: var(--panel); stroke: var(--line); stroke-width: 1.3; }
+.pin text { font: 600 11.5px var(--f-mono); fill: var(--muted); }
+.pin.on rect { fill: var(--ctrl); stroke: var(--ctrl); }
+.pin.on text { fill: var(--panel); }
+.pin:hover rect { stroke: var(--ctrl); }
+.locked .pin { cursor: default; }
+.pkt rect { fill: var(--copper); }
+.pkt text { font: 600 12.5px var(--f-mono); fill: var(--panel); }
+.led { fill: var(--off); stroke: var(--line); }
+.led.on { fill: var(--hi); }
+.ledn { font: 500 9px var(--f-mono); fill: var(--muted); }
+.buslbl { font: 600 11px var(--f-mono); fill: var(--muted); }
+.busval { font: 600 13px var(--f-mono); fill: var(--copper); }
+.busval.x { fill: var(--warn); }
+.status { border-radius: 9px; padding: 10px 12px; font-size: 14.5px; background: var(--bg); }
+.status.warn { background: var(--warn-soft); color: var(--warn); }
+.status .sig { font-family: var(--f-mono); font-weight: 600; color: var(--ctrl); }
+.status .v { font-family: var(--f-mono); font-weight: 600; color: var(--copper); }
+.log { font-family: var(--f-mono); font-size: 12px; color: var(--muted); max-height: 150px; overflow-y: auto; display: grid; gap: 1px; }
+.log div:first-child { color: var(--ink); }
+
+/* controller */
+.ring { display: flex; gap: 6px; flex-wrap: wrap; }
+.ring span { font: 600 13px var(--f-mono); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.ring span.f { border-style: dashed; }
+.ring span.on { background: var(--ctrl); border-color: var(--ctrl); color: var(--panel); }
+.addr { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-family: var(--f-mono); font-size: 13px; }
+.addr .bitc { display: grid; justify-items: center; min-width: 34px; padding: 4px 4px; border-radius: 6px; border: 1px solid var(--line); }
+.addr .bitc small { font-size: 9.5px; color: var(--muted); }
+.addr .bitc.op { border-color: var(--teal); }
+.addr .bitc.st { border-color: var(--ctrl); }
+.addr .bitc b.h { color: var(--hi); } .addr .bitc b.l { color: var(--lo); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-family: var(--f-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; width: 100%; }
+th { text-align: center; font-weight: 600; font-size: 11px; color: var(--muted); padding: 4px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { text-align: center; padding: 4px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr.on td { background: var(--ctrl-soft); }
+td.dot { color: var(--ctrl); font-weight: 700; }
+.minimap svg { width: 100%; max-width: 360px; height: auto; display: block; }
+.mm rect { fill: var(--block); stroke: var(--line); }
+.mm.c rect { fill: var(--ctrl-soft); stroke: var(--ctrl); stroke-width: 2; }
+.mm text { font: 600 10px var(--f-mono); fill: var(--muted); }
+.mm.c text { fill: var(--ctrl); }
+
+/* adder */
+.two { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 980px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.addgrid { display: grid; grid-template-columns: 110px repeat(8, minmax(30px, 1fr)) 120px; gap: 3px; font-family: var(--f-mono); font-size: 13px; align-items: center; min-width: 560px; }
+.addgrid .lbl { font-size: 12px; color: var(--muted); }
+.addgrid .c { text-align: center; padding: 5px 0; border-radius: 5px; font-weight: 600; }
+.addgrid .c.h { background: var(--hi); color: #fff; } .addgrid .c.l { background: var(--lo); color: #fff; }
+.addgrid .c.k { background: transparent; color: var(--muted); font-weight: 500; font-size: 11px; }
+.addgrid .c.inv { outline: 2px solid var(--copper); outline-offset: -2px; }
+.addgrid .dec { font-size: 12.5px; padding-left: 8px; }
+.addgrid .sep { grid-column: 1 / -1; height: 1px; background: var(--line); margin: 3px 0; }
+.addctl { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+.addctl label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); font-family: var(--f-mono); }
+.addctl input[type=number] { width: 80px; font: 600 15px var(--f-mono); padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.explain { font-size: 14.5px; background: var(--bg); border-radius: 9px; padding: 10px 12px; }
+.explain b { font-family: var(--f-mono); color: var(--copper); }
+
+/* memory */
+.mem tr { cursor: pointer; }
+.mem tr.sel td { background: var(--copper-soft); }
+.mem tr.mar td:first-child { box-shadow: inset 3px 0 0 var(--teal); }
+.mem td { text-align: left; }
+.editor { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.editor label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); font-family: var(--f-mono); }
+.editor select, .editor input { font: 600 14px var(--f-mono); padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.editor input { width: 80px; }
+pre.code { margin: 0; font: 500 12.5px var(--f-mono); background: var(--bg); border-radius: 9px; padding: 10px 12px; overflow-x: auto; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Interactive SAP-1 · same chips and signals as your Proteus build</div>
+    <h1>SAP-1 Lab</h1>
+    <p class="lede">You can be the controller. Click the violet <b>control pins</b> on the blocks to switch signals on, then press <b>Clock</b>: whatever chip is enabled puts its byte on the bus, and whatever register is loading grabs it. Switch to <b>Automatic</b> to see the real controller-sequencer (U19, U20, U21) flip the same pins for you. Change memory, A, or B to see how different inputs give different outputs.</p>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Who drives the control signals">
+        <button id="m-man" aria-pressed="true">I am the controller</button>
+        <button id="m-auto" aria-pressed="false">Automatic (controller-sequencer)</button>
+      </div>
+      <button class="primary" id="clk">Clock ↑</button>
+      <button id="run" class="copper" hidden>▶ Run</button>
+      <button id="rst">Reset machine</button>
+      <span class="grow"></span>
+      <label class="speed" for="spd">Animation speed <input id="spd" type="range" min="0.4" max="3" step="0.1" value="1"></label>
+    </div>
+    <h3>Guided lessons (they tell you which pins to click)</h3>
+    <div class="lessons" id="lessons"></div>
+    <div class="guide" id="guide" hidden></div>
+  </div>
+
+  <div class="top">
+    <div class="card">
+      <h2>The machine</h2>
+      <div class="stage"><svg id="m" viewBox="0 0 900 650" aria-label="SAP-1 block diagram"></svg></div>
+      <div class="status" id="status"></div>
+      <div class="log" id="log"></div>
+    </div>
+    <div class="card" id="ctlcard">
+      <h2>Controller-sequencer</h2>
+      <p class="muted" id="ctlintro"></p>
+      <h3>Where it is in your Proteus schematic</h3>
+      <div class="minimap" id="minimap"></div>
+      <h3>1 · Step counter U19 (T-state)</h3>
+      <div class="ring" id="ring"></div>
+      <h3>2 · ROM address = opcode (from U5) + step (from U19)</h3>
+      <div class="addr" id="addr"></div>
+      <h3>3 · U20 / U21 look up the control word</h3>
+      <div class="tbl"><table id="cwt"></table></div>
+      <p class="muted" style="font-size:13.5px">After T6, U24 (NAND of S1, S2) and U22:B clear U19 back to T1. On HLT, U20 drives nHLT low and U22:A blocks the clock, so the whole machine freezes.</p>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h2>Adder / subtractor, bit by bit</h2>
+      <p class="muted">U12–U13 (XOR) and U14–U15 (74LS283). It always shows A + B. When <b style="font-family:var(--f-mono);color:var(--ctrl)">Su</b> = 1, each XOR flips its B bit and the carry-in becomes 1. Flipping every bit and adding 1 is the two's complement, so the same adder now gives A − B.</p>
+      <div class="addctl">
+        <label for="ina">A (accumulator)<input type="number" id="ina" min="0" max="255"></label>
+        <label for="inb">B register<input type="number" id="inb" min="0" max="255"></label>
+        <div class="seg" role="group" aria-label="Su signal"><button id="su0" aria-pressed="true">Su = 0 (add)</button><button id="su1" aria-pressed="false">Su = 1 (subtract)</button></div>
+      </div>
+      <div class="tbl"><div class="addgrid" id="addgrid"></div></div>
+      <div class="explain" id="addexp"></div>
+    </div>
+    <div class="card">
+      <h2>Memory · putting data in</h2>
+      <p class="muted">U4 is a ROM, so data is put in before the machine runs (Malvino used switches; you use the .BIN file). Click a row to change it. The machine resets to use the new program, and the Python block below is exactly what to paste into <b>make_roms.py</b> to put the same data into Proteus.</p>
+      <div class="tbl"><table class="mem" id="mem"></table></div>
+      <div class="editor" id="editor"></div>
+      <pre class="code" id="py"></pre>
+      <div class="toolbar"><button id="copy">Copy PROGRAM block</button><button id="restore">Restore my program</button><span class="muted" id="copied" aria-live="polite"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+const bin = (v, n = 8) => (v >>> 0).toString(2).padStart(n, '0').slice(-n);
+const b8 = v => bin(v).replace(/(\d{4})(\d{4})/, '$1 $2');
+const hex = (v, n = 2) => v.toString(16).toUpperCase().padStart(n, '0');
+
+/* ===== program + microcode ===== */
+const USER = {0:0x09,1:0x1A,2:0x1B,3:0x2C,4:0xE0,5:0xF0,9:16,10:20,11:18,12:31};
+const MEM = new Array(16).fill(0);
+const loadUser = () => { MEM.fill(0); Object.entries(USER).forEach(([a, v]) => MEM[a] = v); };
+loadUser();
+const MN = {0:'LDA',1:'ADD',2:'SUB',14:'OUT',15:'HLT'};
+const FETCH = [['Ep','Lm'],['Cp'],['CE','Li']];
+const OPS = {0:[['Lm','Ei'],['CE','La'],[]], 1:[['Lm','Ei'],['CE','Lb'],['La','Eu']], 2:[['Lm','Ei'],['CE','Lb'],['La','Su','Eu']], 14:[['Ea','Lo'],[],[]], 15:[['Hlt'],[],[]]};
+const micro = (op, t) => t < 3 ? FETCH[t] : ((OPS[op] || [[],[],[]])[t - 3]);
+const SIGS = ['Hlt','Cp','Ep','Lm','CE','Li','Ei','La','Ea','Su','Eu','Lb','Lo'];
+const TXT = {Hlt:'HLT',Cp:'Cp',Ep:'Ep',Lm:'L̄m',CE:'C̄E',Li:'L̄i',Ei:'Ēi',La:'L̄a',Ea:'Ea',Su:'Su',Eu:'Eu',Lb:'L̄b',Lo:'L̄o'};
+const DRIVERS = {Ep:'PC', CE:'MEM', Ei:'IR', Ea:'A', Eu:'ALU'};
+const LOADERS = {Lm:'MAR', Li:'IR', La:'A', Lb:'B', Lo:'OUT'};
+const NAME = {PC:'program counter (U1, via U2)', MEM:'memory (U4)', IR:'instruction register (U6)', A:'accumulator (U7·U8, via U9)', ALU:'adder (U14·U15, via U16)', MAR:'MAR (U3)', B:'B register (U10·U11)', OUT:'output register (U17·U18)'};
+const meaning = (a, v) => { const op = v >> 4; if (a <= 7 && MN[op] !== undefined && (op < 3 ? true : (v & 15) === 0)) return MN[op] + (op < 3 ? ' ' + hex(v & 15, 1) : ''); return v ? 'data ' + v : '—'; };
+
+/* ===== state ===== */
+let S, mode = 'man', speed = 1, busy = false, playing = false;
+function fresh() { S = {pc:0, mar:0, ir:0, a:0, b:0, out:0, t:0, halted:false, sig:new Set(), n:0}; }
+fresh();
+const sigList = () => mode === 'auto' ? micro(S.ir >> 4, S.t) : [...S.sig];
+const has = s => sigList().includes(s);
+const alu = () => has('Su') ? (S.a - S.b) & 255 : (S.a + S.b) & 255;
+function busState() {
+  const drv = sigList().filter(s => DRIVERS[s]);
+  if (!drv.length) return {drv, val:null};
+  const vals = drv.map(s => ({Ep:S.pc, CE:MEM[S.mar], Ei:S.ir & 15, Ea:S.a, Eu:alu()})[s]);
+  return {drv, val: drv.length === 1 ? vals[0] : null, conflict: drv.length > 1};
+}
+
+/* ===== diagram ===== */
+const svg = $('m');
+const mk = (tag, a = {}, p = svg, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+const BX = 450, LX = 22, RX = 628, BW = 252, BH = 66;
+const B = {
+  PC:{x:LX,y:40,nm:'Program counter',ic:'U1 161 · U2 245',side:'L',pins:['Cp','Ep']},
+  MAR:{x:LX,y:140,nm:'MAR',ic:'U3 173',side:'L',pins:['Lm']},
+  MEM:{x:LX,y:240,nm:'Memory',ic:'U4 2764',side:'L',pins:['CE']},
+  IR:{x:LX,y:340,nm:'Instruction reg.',ic:'U5 · U6 173',side:'L',pins:['Li','Ei']},
+  CTL:{x:LX,y:460,nm:'Controller-sequencer',ic:'U19–U21',side:'L',pins:['Hlt'],h:120},
+  A:{x:RX,y:40,nm:'Accumulator A',ic:'U7·U8 · U9',side:'R',pins:['La','Ea']},
+  ALU:{x:RX,y:160,nm:'Adder / subtractor',ic:'U12–U16',side:'R',pins:['Su','Eu']},
+  B:{x:RX,y:280,nm:'B register',ic:'U10 · U11',side:'R',pins:['Lb']},
+  OUT:{x:RX,y:400,nm:'Output register',ic:'U17 · U18',side:'R',pins:['Lo']},
+  DSP:{x:RX,y:510,nm:'Binary display',ic:'8 probes',side:'R',pins:[],h:70},
+};
+const cy = k => B[k].y + BH / 2, edge = k => B[k].side === 'L' ? LX + BW : RX;
+mk('text', {x:BX, y:24, 'text-anchor':'middle', class:'buslbl'}, svg, 'W BUS');
+const busVal = mk('text', {x:BX, y:622, 'text-anchor':'middle', class:'busval'}, svg, '');
+const lanes = Array.from({length:8}, (_, i) => mk('line', {x1:BX - 14 + (7 - i) * 4, y1:32, x2:BX - 14 + (7 - i) * 4, y2:600, class:'lane'}));
+const links = {};
+['PC','MAR','MEM','IR','A','ALU','B','OUT'].forEach(k => links[k] = mk('line', {x1:edge(k), y1:cy(k), x2:B[k].side === 'L' ? BX - 16 : BX + 16, y2:cy(k), class:'link'}));
+mk('path', {d:`M${LX + 110} ${140 + BH} V240`, class:'dir'}); mk('text', {x:LX + 118, y:228, class:'cap'}, svg, 'address');
+mk('path', {d:`M${LX + 110} ${340 + BH} V460`, class:'dir'}); mk('text', {x:LX + 118, y:440, class:'cap'}, svg, 'opcode');
+mk('path', {d:`M${RX + 110} ${40 + BH} V160`, class:'dir'}); mk('text', {x:RX + 118, y:140, class:'cap'}, svg, 'A always feeds adder');
+mk('path', {d:`M${RX + 110} 280 V${160 + BH}`, class:'dir'}); mk('text', {x:RX + 118, y:262, class:'cap'}, svg, 'B always feeds adder');
+mk('path', {d:`M${RX + 110} ${400 + BH} V510`, class:'dir'});
+const G = {}, pinEl = {};
+for (const [k, b] of Object.entries(B)) {
+  const g = mk('g', {class:'blk'});
+  mk('rect', {x:b.x, y:b.y, width:BW, height:b.h || BH, rx:8, class:'b'}, g);
+  mk('text', {x:b.x + 10, y:b.y + 18, class:'nm'}, g, b.nm);
+  mk('text', {x:b.x + BW - 8, y:b.y + 18, class:'ic', 'text-anchor':'end'}, g, b.ic);
+  const v = mk('text', {x:b.x + 10, y:b.y + 44, class:'v'}, g, ''), s = mk('text', {x:b.x + 10, y:b.y + 60, class:'s'}, g, '');
+  G[k] = {g, v, s};
+  b.pins.forEach((p, i) => {
+    const px = b.x + BW - 8 - (b.pins.length - i) * 46 + 6, py = b.y + 30;
+    const pg = mk('g', {class:'pin', tabindex:0, role:'switch', 'aria-label':'control signal ' + TXT[p]}, g);
+    mk('rect', {x:px, y:py, width:40, height:22, rx:5}, pg); mk('text', {x:px + 20, y:py + 15.5, 'text-anchor':'middle'}, pg, TXT[p]);
+    const tog = () => { if (mode !== 'man' || busy || p === 'Hlt') return; S.sig.has(p) ? S.sig.delete(p) : S.sig.add(p); render(); };
+    pg.addEventListener('click', tog); pg.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } });
+    pinEl[p] = pg;
+  });
+}
+const leds = [];
+for (let i = 7; i >= 0; i--) { const x = RX + 22 + (7 - i) * 25; leds[i] = mk('circle', {cx:x, cy:548, r:8, class:'led'}, G.DSP.g); mk('text', {x, y:571, 'text-anchor':'middle', class:'ledn'}, G.DSP.g, i); }
+const pkt = mk('g', {class:'pkt', opacity:0}); mk('rect', {x:-50, y:-13, width:100, height:26, rx:6}, pkt); const pktT = mk('text', {x:0, y:4.5, 'text-anchor':'middle'}, pkt, '');
+
+/* ===== controller panel ===== */
+const ring = $('ring'), ringEls = Array.from({length:6}, (_, i) => { const s = document.createElement('span'); s.textContent = 'T' + (i + 1); if (i < 3) s.className = 'f'; ring.appendChild(s); return s; });
+(function minimap() {
+  const cols = [0,1,2,3,4], rows = [['U1','U2','U3','U5','U6'],['U7','U8','U9','U10','U11'],['U14','U15','U16','U17','U18'],['U4','U20','U21','U19','U22–24']];
+  const C = new Set(['U19','U20','U21','U22–24']);
+  let s = `<svg viewBox="0 0 360 236" role="img" aria-label="Schematic map with controller chips highlighted">`;
+  rows.forEach((r, ri) => r.forEach((u, ci) => { const x = 6 + ci * 70, y = 6 + ri * 46, h = ri === 3 && ci < 3 ? 56 : 38; s += `<g class="mm${C.has(u) ? ' c' : ''}"><rect x="${x}" y="${y}" width="62" height="${h}" rx="4"></rect><text x="${x + 31}" y="${y + 22}" text-anchor="middle">${u}</text></g>`; }));
+  s += `<g class="mm"><rect x="6" y="196" width="270" height="34" rx="4"></rect><text x="141" y="217" text-anchor="middle">U12 · U13 XOR · probes</text></g>`;
+  s += `<g class="mm c"><rect x="286" y="196" width="68" height="34" rx="4"></rect><text x="320" y="217" text-anchor="middle">CLK · RST</text></g></svg>`;
+  $('minimap').innerHTML = s + '<p class="muted" style="font-size:13px;margin-top:4px">Bottom row, middle to right: U20 and U21 (control ROMs), U19 (step counter), and the gates U22–U24 in the right-hand column, next to the clock generator and reset switch.</p>';
+})();
+function renderCtl() {
+  const op = S.ir >> 4, t = S.t, addr = (op << 3) | t;
+  ringEls.forEach((e, i) => e.classList.toggle('on', mode === 'auto' && !S.halted && i === t));
+  const bits = [['OP3',(op>>3)&1,'op'],['OP2',(op>>2)&1,'op'],['OP1',(op>>1)&1,'op'],['OP0',op&1,'op'],['S2',(t>>2)&1,'st'],['S1',(t>>1)&1,'st'],['S0',t&1,'st']];
+  $('addr').innerHTML = bits.map(([n, v, c]) => `<span class="bitc ${c}"><small>${n}</small><b class="${v ? 'h' : 'l'}">${v}</b></span>`).join('') +
+    `<span style="margin-left:8px">= address <b>${hex(addr)}h</b> · opcode ${bin(op, 4)} = ${MN[op] || '(unused)'}, step T${t + 1}</span>`;
+  const cols = ['Ep','Lm','Cp','CE','Li','Ei','La','Lb','Su','Eu','Ea','Lo','Hlt'];
+  $('cwt').innerHTML = `<thead><tr><th>Step</th>${cols.map(c => `<th>${TXT[c]}</th>`).join('')}</tr></thead><tbody>` +
+    [0,1,2,3,4,5].map(i => { const m = micro(op, i); return `<tr class="${mode === 'auto' && i === t && !S.halted ? 'on' : ''}"><td>T${i + 1}</td>${cols.map(c => `<td class="dot">${m.includes(c) ? '●' : ''}</td>`).join('')}</tr>`; }).join('') + '</tbody>';
+  $('ctlintro').innerHTML = mode === 'auto'
+    ? 'Automatic mode: these chips are now driving every violet pin. Each clock, U19 counts one step, the ROMs look up the row for the current opcode, and that row\'s dots become the active pins.'
+    : 'Manual mode: the controller is disconnected and <b>you</b> are U20/U21. The table shows what the real controller would switch on for the current opcode, so you can copy it.';
+}
+
+/* ===== render ===== */
+function render() {
+  const bs = busState(), sl = sigList();
+  G.PC.v.textContent = bin(S.pc, 4); G.PC.s.textContent = 'next address ' + S.pc;
+  G.MAR.v.textContent = bin(S.mar, 4); G.MAR.s.textContent = 'points at ' + S.mar;
+  G.MEM.v.textContent = b8(MEM[S.mar]); G.MEM.s.textContent = '[' + S.mar + '] ' + meaning(S.mar, MEM[S.mar]);
+  G.IR.v.textContent = bin(S.ir >> 4, 4) + ' ' + bin(S.ir & 15, 4); G.IR.s.textContent = (MN[S.ir >> 4] || '?') + ' ' + (S.ir & 15);
+  G.CTL.v.textContent = mode === 'auto' ? (S.halted ? 'HALTED' : 'T' + (S.t + 1)) : 'you'; G.CTL.s.textContent = mode === 'auto' ? 'drives the violet pins' : 'controller unplugged';
+  G.A.v.textContent = b8(S.a); G.A.s.textContent = '= ' + S.a;
+  G.ALU.v.textContent = b8(alu()); G.ALU.s.textContent = (has('Su') ? 'A − B = ' : 'A + B = ') + alu();
+  G.B.v.textContent = b8(S.b); G.B.s.textContent = '= ' + S.b;
+  G.OUT.v.textContent = b8(S.out); G.OUT.s.textContent = '= ' + S.out;
+  for (let i = 0; i < 8; i++) leds[i].classList.toggle('on', !!((S.out >> i) & 1));
+  for (const p of SIGS) pinEl[p] && pinEl[p].classList.toggle('on', sl.includes(p));
+  svg.classList.toggle('locked', mode !== 'man');
+  Object.values(G).forEach(o => o.g.classList.remove('src', 'dst'));
+  Object.values(links).forEach(l => l.classList.remove('live'));
+  bs.drv.forEach(s => { G[DRIVERS[s]].g.classList.add('src'); links[DRIVERS[s]].classList.add('live'); });
+  sl.filter(s => LOADERS[s]).forEach(s => { G[LOADERS[s]].g.classList.add('dst'); links[LOADERS[s]].classList.add('live'); });
+  lanes.forEach((l, i) => l.setAttribute('class', 'lane' + (bs.conflict ? ' x' : bs.val != null && (bs.val >> i) & 1 ? ' h' : '')));
+  busVal.setAttribute('class', 'busval' + (bs.conflict ? ' x' : ''));
+  busVal.textContent = bs.conflict ? 'CONFLICT: ' + bs.drv.map(s => TXT[s]).join(' + ') + ' both drive the bus' : bs.val == null ? 'bus floating (nothing enabled)' : 'bus = ' + b8(bs.val) + ' (' + bs.val + ')';
+  status(); renderCtl(); renderAdder(); renderMem();
+  $('clk').textContent = mode === 'auto' ? 'Step (one clock)' : 'Clock ↑';
+  $('run').hidden = mode !== 'auto';
+}
+function status() {
+  const bs = busState(), sl = sigList(), el = $('status'), tag = s => `<span class="sig">${TXT[s]}</span>`;
+  const ld = sl.filter(s => LOADERS[s]);
+  el.className = 'status';
+  if (S.halted) { el.innerHTML = `Halted. The display holds <span class="v">${b8(S.out)}</span> = ${S.out}. Press Reset machine to start again.`; return; }
+  if (bs.conflict) { el.className = 'status warn'; el.innerHTML = `Two chips are driving the bus at once (${bs.drv.map(tag).join(' and ')}). In real hardware the outputs fight and the value is garbage; Proteus reports "logic contention". Switch one off.`; return; }
+  let h = '';
+  if (bs.val != null) h += `${tag(bs.drv[0])} puts <span class="v">${b8(bs.val)}</span> (${bs.val}) from the ${NAME[DRIVERS[bs.drv[0]]]} on the bus. `;
+  else h += 'Nothing is driving the bus. ';
+  if (ld.length) h += bs.val != null ? `On Clock ↑, ${ld.map(s => tag(s) + ' loads the ' + NAME[LOADERS[s]]).join(' and ')}.` : `${ld.map(tag).join(', ')} would load a floating bus. TTL inputs read floating lines as 1, so it would store 1111 1111.`;
+  else h += bs.val != null ? 'Nobody is loading, so Clock ↑ changes nothing (switch on an L̄ pin to catch the byte).' : '';
+  if (sl.includes('Cp')) h += ` ${tag('Cp')}: the program counter will count ${S.pc} → ${(S.pc + 1) & 15}.`;
+  if (!sl.length) h = mode === 'man' ? 'All control pins are off. Click a violet pin on a block to switch it on, or pick a lesson above.' : h;
+  el.innerHTML = h;
+}
+
+/* ===== clock ===== */
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function move(pts, dur) {
+  return new Promise(res => {
+    if (reduce) return res();
+    const seg = []; let tot = 0; for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]); seg.push(d); tot += d; }
+    const t0 = performance.now();
+    const fr = now => { let f = Math.min(1, (now - t0) / dur); f = f < .5 ? 2*f*f : 1 - Math.pow(-2*f + 2, 2) / 2; let d = f * tot, i = 0; while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; } const k = seg[i] ? d / seg[i] : 1; pkt.setAttribute('transform', `translate(${pts[i][0] + (pts[i+1][0] - pts[i][0]) * k},${pts[i][1] + (pts[i+1][1] - pts[i][1]) * k})`); if (f < 1) requestAnimationFrame(fr); else res(); };
+    requestAnimationFrame(fr);
+  });
+}
+async function clock() {
+  if (busy || S.halted) return;
+  const bs = busState(), sl = sigList();
+  if (bs.conflict) { status(); return; }
+  busy = true;
+  const loaders = sl.filter(s => LOADERS[s]);
+  const val = bs.val == null ? 255 : bs.val;
+  if (loaders.length && bs.val != null) {
+    const src = DRIVERS[bs.drv[0]]; pktT.textContent = b8(val); pkt.setAttribute('opacity', 1);
+    for (const l of loaders) { const d = LOADERS[l]; const sx = B[src].side === 'L' ? edge(src) + 54 : edge(src) - 54, dx = B[d].side === 'L' ? edge(d) + 54 : edge(d) - 54; await move([[sx, cy(src)], [BX, cy(src)], [BX, cy(d)], [dx, cy(d)]], 900 / speed); }
+    pkt.setAttribute('opacity', 0);
+  } else await wait(200 / speed);
+  const before = {...S};
+  for (const l of loaders) { const d = LOADERS[l]; if (d === 'MAR') S.mar = val & 15; if (d === 'IR') S.ir = val; if (d === 'A') S.a = val; if (d === 'B') S.b = val; if (d === 'OUT') S.out = val; G[d].g.classList.add('flash'); }
+  if (sl.includes('Cp')) { S.pc = (S.pc + 1) & 15; G.PC.g.classList.add('flash'); }
+  if (sl.includes('Hlt')) S.halted = true;
+  const line = document.createElement('div');
+  line.textContent = `${mode === 'auto' ? 'T' + (S.t + 1) + ' ' : ''}${sl.map(s => TXT[s]).join(' ') || '(nothing on)'}${bs.val != null ? '  bus=' + b8(bs.val) : ''}${loaders.length ? '  → ' + loaders.map(s => LOADERS[s]).join(',') : ''}  | PC=${S.pc} MAR=${S.mar} A=${S.a} B=${S.b} OUT=${S.out}`;
+  $('log').prepend(line);
+  if (mode === 'auto' && !S.halted) S.t = (S.t + 1) % 6;
+  if (mode === 'man') { S.sig.clear(); }
+  S.n++;
+  render();
+  setTimeout(() => Object.values(G).forEach(o => o.g.classList.remove('flash')), 600);
+  busy = false;
+  if (guideState) advanceGuide();
+}
+
+/* ===== lessons ===== */
+const LESSONS = [
+  {id:'fetch', t:'Fetch an instruction', d:'How the CPU reads the next instruction out of memory into the IR.', setup:() => {}, steps:[
+    {s:['Ep','Lm'], n:'T1: Ep puts the PC (address 0) on the bus. L̄m makes the MAR catch it.'},
+    {s:['Cp'], n:'T2: Cp makes the program counter count up, ready for the next instruction.'},
+    {s:['CE','Li'], n:'T3: C̄E makes memory put the byte at that address on the bus. L̄i loads it into the instruction register.'}]},
+  {id:'read', t:'Extract data from memory', d:'LDA by hand: use the address in the IR to read a data byte into A.', setup:() => { S.ir = MEM[0]; S.pc = 1; }, steps:[
+    {s:['Ei','Lm'], n:'T4: Ēi puts the IR\'s low nibble (the address part of LDA 9) on the bus. L̄m loads it into the MAR, so memory now points at address 9.'},
+    {s:['CE','La'], n:'T5: C̄E makes memory output the byte at address 9 (16). L̄a loads it into the accumulator. You just extracted data.'}]},
+  {id:'add', t:'Add two numbers', d:'Put a byte in B, then send the adder\'s result back into A.', setup:() => { S.ir = MEM[1]; S.a = 16; S.pc = 2; }, steps:[
+    {s:['Ei','Lm'], n:'Point the MAR at the operand address (A = 10) from the IR.'},
+    {s:['CE','Lb'], n:'Memory puts 20 on the bus and L̄b loads it into B. The adder instantly shows A + B.'},
+    {s:['Eu','La'], n:'Eu puts the adder\'s result on the bus and L̄a loads it back into A. A = 16 + 20 = 36.'}]},
+  {id:'sub', t:'Subtract with the adder', d:'Same hardware as ADD. One extra pin, Su, turns it into a subtractor.', setup:() => { S.ir = MEM[3]; S.a = 54; S.pc = 4; }, steps:[
+    {s:['Ei','Lm'], n:'Point the MAR at address 12 (SUB C).'},
+    {s:['CE','Lb'], n:'Load 31 into B. Look at the adder panel below: with Su off it shows 54 + 31.'},
+    {s:['Su','Eu','La'], n:'Su flips every B bit in the XOR gates and sets carry-in to 1. The adder now outputs 54 − 31 = 23, and L̄a stores it in A.'}]},
+  {id:'out', t:'Show the answer', d:'Copy A to the output register and the 8 lights.', setup:() => { S.ir = MEM[4]; S.a = 23; S.pc = 5; }, steps:[
+    {s:['Ea','Lo'], n:'Ea puts the accumulator on the bus and L̄o loads it into the output register. The display shows 0001 0111.'}]},
+];
+let guideState = null;
+function startLesson(L) {
+  mode = 'man'; setModeButtons(); fresh(); L.setup(); guideState = {L, i:0};
+  document.querySelectorAll('.lesson').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === L.id));
+  showGuide(); render();
+}
+function showGuide() {
+  const g = $('guide'); if (!guideState) { g.hidden = true; return; }
+  const {L, i} = guideState; g.hidden = false;
+  if (i >= L.steps.length) { g.innerHTML = `<div class="stepline"><b>Done.</b> ${L.t} complete. Try changing a byte in memory or the A/B values and run the lesson again to see different outputs.</div><div class="row"><button id="g-again">Do it again</button><button id="g-close">Close lesson</button></div>`; $('g-again').onclick = () => startLesson(L); $('g-close').onclick = () => { guideState = null; showGuide(); document.querySelectorAll('.lesson').forEach(b => b.setAttribute('aria-pressed', false)); }; return; }
+  const st = L.steps[i];
+  g.innerHTML = `<small>${L.t} · step ${i + 1} of ${L.steps.length}</small><div class="stepline">Switch on ${st.s.map(s => `<span class="sig">${TXT[s]}</span>`).join(' + ')}, then press <b>Clock ↑</b>.</div><div class="muted">${st.n}</div><div class="row"><button id="g-do">Switch them on for me</button><button id="g-close">Close lesson</button></div>`;
+  $('g-do').onclick = () => { S.sig = new Set(st.s); render(); };
+  $('g-close').onclick = () => { guideState = null; showGuide(); document.querySelectorAll('.lesson').forEach(b => b.setAttribute('aria-pressed', false)); };
+}
+function advanceGuide() { guideState.i++; showGuide(); }
+LESSONS.forEach(L => { const b = document.createElement('button'); b.className = 'lesson'; b.dataset.id = L.id; b.setAttribute('aria-pressed', 'false'); b.innerHTML = `<b>${L.t}</b><span>${L.d}</span>`; b.onclick = () => startLesson(L); $('lessons').appendChild(b); });
+
+/* ===== adder panel ===== */
+function renderAdder() {
+  const su = has('Su') ? 1 : 0, a = S.a, b = S.b, xb = su ? (~b) & 255 : b;
+  $('ina').value = a; $('inb').value = b;
+  $('su0').setAttribute('aria-pressed', !su); $('su1').setAttribute('aria-pressed', !!su);
+  const carries = [su]; let s = 0;
+  for (let i = 0; i < 8; i++) { const t = ((a >> i) & 1) + ((xb >> i) & 1) + carries[i]; s |= (t & 1) << i; carries.push(t >> 1); }
+  const cell = (v, extra = '') => `<div class="c ${v ? 'h' : 'l'} ${extra}">${v}</div>`;
+  const row = (label, f, dec, ex) => `<div class="lbl">${label}</div>${[7,6,5,4,3,2,1,0].map(i => cell(f(i), ex ? ex(i) : '')).join('')}<div class="dec">${dec}</div>`;
+  let h = `<div class="lbl">bit</div>${[7,6,5,4,3,2,1,0].map(i => `<div class="c k">${i}</div>`).join('')}<div></div>`;
+  h += row('A', i => (a >> i) & 1, '= ' + a);
+  h += row('B', i => (b >> i) & 1, '= ' + b);
+  h += `<div class="lbl">Su into XOR</div>${[7,6,5,4,3,2,1,0].map(() => cell(su)).join('')}<div class="dec">${su ? 'flip every bit' : 'pass through'}</div>`;
+  h += row('XOR out (XB)', i => (xb >> i) & 1, su ? '= ~B = ' + xb : '= B', i => su ? 'inv' : '');
+  h += row('carry in', i => carries[i], i => '', null).replace(/<div class="dec">.*?<\/div>$/, `<div class="dec">C0 = Su = ${su}</div>`);
+  h += '<div class="sep"></div>';
+  h += row('Σ (result)', i => (s >> i) & 1, '= ' + s);
+  h += `<div class="lbl">carry out</div><div class="c ${carries[8] ? 'h' : 'l'}">${carries[8]}</div>${'<div></div>'.repeat(7)}<div class="dec">C4 of U15 (unused)</div>`;
+  $('addgrid').innerHTML = h;
+  $('addexp').innerHTML = su
+    ? `Subtract: ${a} − ${b}. The XOR gates turn B = <b>${b8(b)}</b> into <b>${b8(xb)}</b> (that is 255 − ${b} = ${xb}), and carry-in adds 1, giving ${xb + 1}, which is −${b} in 8-bit two's complement. So ${a} + ${xb} + 1 = ${a + xb + 1}, and keeping 8 bits gives <b>${s}</b>` + (a < b ? `. The true answer is ${a - b}, so ${s} is ${a - b} written in two's complement.` : '.')
+    : `Add: ${a} + ${b} = ${a + b}` + (a + b > 255 ? `, which does not fit in 8 bits, so the result wraps to <b>${s}</b> (carry out is lost).` : ` = <b>${b8(s)}</b>.`) + ' Switch Su on to see the same chips subtract.';
+}
+$('ina').oninput = e => { S.a = Math.max(0, Math.min(255, +e.target.value || 0)); render(); };
+$('inb').oninput = e => { S.b = Math.max(0, Math.min(255, +e.target.value || 0)); render(); };
+$('su0').onclick = () => { if (mode === 'man') { S.sig.delete('Su'); render(); } };
+$('su1').onclick = () => { if (mode === 'man') { S.sig.add('Su'); render(); } };
+
+/* ===== memory editor ===== */
+let selAddr = 9;
+function renderMem() {
+  $('mem').innerHTML = `<thead><tr><th>Addr</th><th>Bits</th><th>Hex</th><th>Meaning</th></tr></thead><tbody>` +
+    MEM.map((v, a) => `<tr data-a="${a}" class="${a === selAddr ? 'sel' : ''} ${a === S.mar ? 'mar' : ''}"><td>${hex(a, 1)}</td><td>${b8(v)}</td><td>${hex(v)}</td><td>${meaning(a, v)}</td></tr>`).join('') + '</tbody>';
+  $('mem').querySelectorAll('tr[data-a]').forEach(tr => tr.onclick = () => { selAddr = +tr.dataset.a; renderMem(); });
+  const v = MEM[selAddr], op = v >> 4, isIns = MN[op] !== undefined && selAddr <= 7;
+  $('editor').innerHTML = `<label for="ed-kind">Address ${hex(selAddr, 1)} holds<select id="ed-kind"><option value="data">a data number</option>${[0,1,2,14,15].map(o => `<option value="${o}">instruction ${MN[o]}</option>`).join('')}</select></label>
+    <label for="ed-val" id="ed-vl">value (0–255)<input id="ed-val" type="number" min="0" max="255"></label>
+    <button class="copper" id="ed-save">Write to memory</button>`;
+  const kind = $('ed-kind'), val = $('ed-val');
+  kind.value = isIns ? String(op) : 'data';
+  const sync = () => { const k = kind.value; const ins = k !== 'data'; $('ed-vl').firstChild.textContent = ins ? (+k < 3 ? 'operand address (0–15)' : 'no operand') : 'value (0–255)'; val.max = ins ? 15 : 255; val.disabled = ins && +k >= 3; };
+  val.value = isIns ? (v & 15) : v; sync(); kind.onchange = () => { val.value = 0; sync(); };
+  $('ed-save').onclick = () => {
+    const k = kind.value; let nv;
+    if (k === 'data') nv = Math.max(0, Math.min(255, +val.value || 0)); else nv = (+k << 4) | (+k < 3 ? Math.max(0, Math.min(15, +val.value || 0)) : 0);
+    MEM[selAddr] = nv; const keepMode = mode; fresh(); mode = keepMode; guideState = null; showGuide(); $('log').innerHTML = ''; render();
+    $('status').innerHTML = `Wrote ${b8(nv)} (${meaning(selAddr, nv)}) to address ${selAddr}. The machine was reset so the new program runs from the start. Try Automatic → Run.`;
+  };
+  $('py').textContent = 'PROGRAM = {\n' + MEM.map((v, a) => v || a <= 5 ? `    0x${hex(a, 1)}: 0x${hex(v)},  # ${meaning(a, v)}` : null).filter(Boolean).join('\n') + '\n}';
+}
+$('copy').onclick = () => { const t = $('py').textContent; navigator.clipboard.writeText(t).then(() => $('copied').textContent = 'Copied. Paste it over PROGRAM in make_roms.py and run it.').catch(() => { const r = document.createRange(); r.selectNodeContents($('py')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('copied').textContent = 'Selected: press Cmd+C.'; }); };
+$('restore').onclick = () => { loadUser(); fresh(); render(); $('copied').textContent = 'Your original program (16 + 20 + 18 − 31) is back.'; };
+
+/* ===== modes + buttons ===== */
+function setModeButtons() { $('m-man').setAttribute('aria-pressed', mode === 'man'); $('m-auto').setAttribute('aria-pressed', mode === 'auto'); }
+$('m-man').onclick = () => { if (busy) return; mode = 'man'; playing = false; S.sig.clear(); setModeButtons(); render(); };
+$('m-auto').onclick = () => { if (busy) return; mode = 'auto'; guideState = null; showGuide(); document.querySelectorAll('.lesson').forEach(b => b.setAttribute('aria-pressed', false)); setModeButtons(); render(); };
+$('clk').onclick = () => { playing = false; $('run').textContent = '▶ Run'; clock(); };
+$('run').onclick = async () => { if (S.halted) { fresh(); render(); } playing = !playing; $('run').textContent = playing ? '❚❚ Pause' : '▶ Run'; while (playing && !S.halted && mode === 'auto') { await clock(); await wait(500 / speed); } playing = false; $('run').textContent = '▶ Run'; };
+$('rst').onclick = () => { if (busy) return; playing = false; fresh(); $('log').innerHTML = ''; if (guideState) startLesson(guideState.L); else render(); };
+$('spd').oninput = e => speed = +e.target.value;
+
+render();
+})();
+</script>
+
+</body></html>

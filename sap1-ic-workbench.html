@@ -1,0 +1,541 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SAP-1 IC Workbench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: chip tabs; per chip two live schematics side by side (test bench | inside the chip) with a "what is happening" panel between them and the page title */
+:root {
+  --bg: #e6ebe8; --panel: #ffffff; --ink: #17222a; --muted: #59686f; --line: #c4cdd0;
+  --sheet: #e3e2cd; --grid: #d5d4bc; --part: #cfceb0; --edge: #7a1d1d; --txt: #1c1c1c;
+  --hi: #d42a1a; --lo: #2a3fd4; --z: #9aa2a6; --copper: #c26d12; --sel: #f5c54a;
+  --f-display: "Chakra Petch", "Bahnschrift", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #161f25; --ink: #e2e9ee; --muted: #8e9ca5; --line: #2c3a43;
+  --sheet: #1a2125; --grid: #222b30; --part: #2c353a; --edge: #e58a76; --txt: #dfe5e8;
+  --hi: #ff5a44; --lo: #6f8cff; --z: #5f6a70; --copper: #f0a542; --sel: #8a6a12; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #161f25; --ink: #e2e9ee; --muted: #8e9ca5; --line: #2c3a43;
+  --sheet: #1a2125; --grid: #222b30; --part: #2c353a; --edge: #e58a76; --txt: #dfe5e8;
+  --hi: #ff5a44; --lo: #6f8cff; --z: #5f6a70; --copper: #f0a542; --sel: #8a6a12; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--f-display); font-size: clamp(28px, 4.6vw, 42px); line-height: 1.05; margin: 4px 0 6px; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 78ch; }
+.lede b { color: var(--ink); }
+.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 760px) { .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tabs button { text-align: left; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px; cursor: pointer; display: grid; }
+.tabs button:hover { border-color: var(--copper); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.tabs b { font: 700 18px var(--f-display); }
+.tabs span { font-size: 12.5px; opacity: .8; }
+button:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.head { display: grid; gap: 4px; }
+.head h2 { font: 700 26px var(--f-display); margin: 0; }
+.head p { margin: 0; color: var(--muted); max-width: 90ch; }
+.benches { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .benches { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.card h3 { font: 600 12.5px var(--f-mono); margin: 0; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.card .hint { font-size: 13.5px; color: var(--muted); margin: 0; }
+.sheet { background: var(--sheet); border-radius: 8px; overflow-x: auto; }
+.sheet svg { display: block; width: 100%; height: auto; }
+.bench svg { min-width: 460px; } .inside svg { min-width: 560px; }
+.now { font-size: 15.5px; background: var(--bg); border-radius: 9px; padding: 12px 14px; }
+.now b { font-family: var(--f-mono); }
+.now .h { color: var(--hi); font-family: var(--f-mono); font-weight: 600; } .now .l { color: var(--lo); font-family: var(--f-mono); font-weight: 600; }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ctl button { font: 600 14px var(--f-body); border-radius: 7px; padding: 7px 13px; cursor: pointer; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.ctl button.clk { background: var(--edge); border-color: var(--edge); color: var(--panel); }
+.ctl select { font: 500 13px var(--f-mono); padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 16px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
+.sap { font-size: 14px; }
+.sap td { padding: 4px 10px 4px 0; vertical-align: top; }
+.sap td:first-child { font: 600 13px var(--f-mono); color: var(--copper); white-space: nowrap; }
+
+/* schematic */
+.gridbg { fill: url(#g); }
+.w { fill: none; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.w.h { stroke: var(--hi); } .w.l { stroke: var(--lo); } .w.z { stroke: var(--z); stroke-dasharray: 5 4; }
+.j { stroke: none; } .j.h { fill: var(--hi); } .j.l { fill: var(--lo); } .j.z { fill: var(--z); }
+.body { fill: var(--part); stroke: var(--edge); stroke-width: 2.2; }
+.pinl { stroke: var(--edge); stroke-width: 2.2; }
+.bub { fill: var(--part); stroke: var(--edge); stroke-width: 2; }
+.t { font: 500 11px var(--f-mono); fill: var(--txt); }
+.tb { font: 700 15px var(--f-display); fill: var(--txt); }
+.tn { font: 500 9.5px var(--f-mono); fill: var(--txt); opacity: .75; }
+.tc { font: 600 10px var(--f-mono); fill: var(--txt); opacity: .8; }
+.nl { font: 600 10.5px var(--f-mono); }
+.nl.h { fill: var(--hi); } .nl.l { fill: var(--lo); } .nl.z { fill: var(--z); }
+.ls { cursor: pointer; }
+.ls .box { stroke: var(--edge); stroke-width: 1.8; }
+.ls .box.h { fill: var(--hi); } .ls .box.l { fill: var(--lo); }
+.ls:hover .box { stroke-width: 3; }
+.val { font: 700 15px var(--f-mono); fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.probe .box { stroke: var(--edge); stroke-width: 1.8; }
+.probe .box.h { fill: var(--hi); } .probe .box.l { fill: var(--lo); } .probe .box.z { fill: var(--z); }
+.btn { cursor: pointer; }
+.btn rect { fill: var(--part); stroke: var(--edge); stroke-width: 2; }
+.btn:hover rect { stroke-width: 3; }
+.btn.fire rect { fill: var(--hi); }
+.cell { stroke: var(--edge); stroke-width: .8; }
+.cell.h { fill: var(--hi); } .cell.l { fill: var(--lo); opacity: .55; }
+.row-sel { fill: var(--sel); opacity: .55; }
+.ctxt { font: 600 10px var(--f-mono); fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.note { font: italic 500 11px var(--f-body); fill: var(--txt); opacity: .8; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">SAP-1 · one chip at a time, on its own circuit</div>
+    <h1>IC workbench</h1>
+    <p class="lede">Each chip from your SAP-1 is wired on its own test bench, just as you would test it in Proteus: <b>click a logic-state switch</b> to flip an input, <b>press CLK</b> to give a clock pulse, and read the probes. Next to it is the <b>circuit inside the chip</b>, built from flip-flops, multiplexers, buffers and adders, with every internal wire coloured live. Red = 1, blue = 0, dashed grey = disconnected (Z).</p>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <section class="head" id="head"></section>
+  <div class="ctl" id="ctl"></div>
+  <div class="now" id="now" aria-live="polite"></div>
+  <div class="benches">
+    <div class="card bench"><h3>1 · Test circuit</h3><p class="hint">Switches on the left, probes on the right. Click any switch.</p><div class="sheet" id="bench"></div></div>
+    <div class="card inside"><h3>2 · Inside the chip</h3><p class="hint" id="insideHint"></p><div class="sheet" id="inside"></div></div>
+  </div>
+  <div class="legend"><span><i style="background:var(--hi)"></i>logic 1</span><span><i style="background:var(--lo)"></i>logic 0</span><span><i style="background:var(--z)"></i>Z: not driven</span><span>Labels with the same name are the same wire (Proteus net labels)</span></div>
+  <div class="card"><h3>Where this chip works in your SAP-1</h3><table class="sap" id="sap"></table></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const L = v => v == null ? 'z' : v ? 'h' : 'l';
+const P = pts => pts.map(p => p.join(',')).join(' ');
+const ln = (x1, y1, x2, y2, v) => `<line class="w ${L(v)}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+const pl = (pts, v) => `<polyline class="w ${L(v)}" points="${P(pts)}"/>`;
+const jd = (x, y, v) => `<circle class="j ${L(v)}" cx="${x}" cy="${y}" r="3.6"/>`;
+const tx = (x, y, s, c = 't', a = 'start') => `<text class="${c}" x="${x}" y="${y}" text-anchor="${a}">${s}</text>`;
+const nl = (x, y, s, v, a = 'start') => `<text class="nl ${L(v)}" x="${x}" y="${y}" text-anchor="${a}">${s}</text>`;
+const ov = s => s.startsWith('~') ? `<tspan text-decoration="overline">${s.slice(1)}</tspan>` : s;
+const sheet = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="g" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="var(--grid)" stroke-width=".8"/></pattern></defs><rect class="gridbg" width="${w}" height="${h}"/>${inner}</svg>`;
+
+/* ---------- gate primitives (return svg + pin coords) ---------- */
+function gate(kind, x, y, n = 2, ins = [], out) {
+  const h = Math.max(40, n * 14 + 8), pts = [];
+  for (let k = 0; k < n; k++) pts.push([x - 14, y + h * (k + 1) / (n + 1)]);
+  let s = '', ox;
+  const bub = kind === 'nand' || kind === 'nor';
+  if (kind === 'and' || kind === 'nand') { s = `<path class="body" d="M${x} ${y}h22a${h / 2} ${h / 2} 0 0 1 0 ${h}h-22z"/>`; ox = x + 22 + h / 2; }
+  else { const xo = kind === 'xor' ? 7 : 0; s = (kind === 'xor' ? `<path d="M${x} ${y}q10 ${h / 2} 0 ${h}" fill="none" stroke="var(--edge)" stroke-width="2.2"/>` : '') + `<path class="body" d="M${x + xo} ${y}q10 ${h / 2} 0 ${h}q32 0 46 ${-h / 2}q-14 ${-h / 2} -46 ${-h / 2}z"/>`; ox = x + xo + 46; }
+  if (bub) { s += `<circle class="bub" cx="${ox + 5}" cy="${y + h / 2}" r="4.5"/>`; ox += 10; }
+  pts.forEach((p, k) => s += ln(p[0], p[1], x + (kind === 'or' || kind === 'nor' || kind === 'xor' ? 6 : 0), p[1], ins[k]));
+  s += ln(ox, y + h / 2, ox + 12, y + h / 2, out);
+  return {s, in: pts, out: [ox + 12, y + h / 2], h};
+}
+function inv(x, y, vin, vout) { // centre-line y
+  return {s: ln(x - 14, y, x, y, vin) + `<path class="body" d="M${x} ${y - 13}L${x} ${y + 13}L${x + 24} ${y}Z"/><circle class="bub" cx="${x + 28.5}" cy="${y}" r="4.5"/>` + ln(x + 33, y, x + 45, y, vout), in: [x - 14, y], out: [x + 45, y]};
+}
+function tri(x, y, dir, vin, vout, ven) { // tri-state buffer, enable from top
+  const s = dir === 'R' ? `<path class="body" d="M${x} ${y - 13}L${x} ${y + 13}L${x + 28} ${y}Z"/>` : `<path class="body" d="M${x + 28} ${y - 13}L${x + 28} ${y + 13}L${x} ${y}Z"/>`;
+  const ex = dir === 'R' ? x + 11 : x + 17;
+  return {s: s + ln(ex, y - 7, ex, y - 22, ven), in: dir === 'R' ? [x, y] : [x + 28, y], out: dir === 'R' ? [x + 28, y] : [x, y], en: [ex, y - 22]};
+}
+function dff(x, y, v, clrName = 'CLR') { // pins D(y+15) CLK(y+40) CLR(y+65) Q(x+70,y+15)
+  return {s: `<rect class="body" x="${x}" y="${y}" width="70" height="80" rx="2"/>` + tx(x + 6, y + 19, 'D') + `<path d="M${x} ${y + 34}l8 6l-8 6" fill="none" stroke="var(--edge)" stroke-width="1.8"/>` + tx(x + 6, y + 69, ov(clrName), 'tc') + tx(x + 64, y + 19, 'Q', 't', 'end') + tx(x + 35, y + 52, 'D-FF', 'tn', 'middle'),
+          d: [x, y + 15], clk: [x, y + 40], clr: [x, y + 65], q: [x + 70, y + 15]};
+}
+function mux(x, y, top, bot, sel, out, tl = '1', bl = '0') { // in-top y+20, in-bot y+50, sel top x+20,y+6 ; out x+40,y+35
+  return {s: `<path class="body" d="M${x} ${y}L${x + 40} ${y + 12}L${x + 40} ${y + 58}L${x} ${y + 70}Z"/>` + tx(x + 4, y + 24, tl, 'tn') + tx(x + 4, y + 54, bl, 'tn') + tx(x + 20, y + 40, 'MUX', 'tn', 'middle'),
+          a: [x, y + 20], b: [x, y + 50], sel: [x + 20, y + 6], o: [x + 40, y + 35]};
+}
+const port = (x, y, name, num, side, v) => { // chip pin as a port box on the inside drawing
+  const w = 50, bx = side === 'L' ? x - w : x;
+  return `<rect x="${bx}" y="${y - 9}" width="${w}" height="18" rx="9" fill="var(--panel)" stroke="var(--edge)" stroke-width="1.4"/>` + tx(bx + w / 2, y + 4, ov(name), 't', 'middle') + tx(side === 'L' ? bx - 4 : bx + w + 4, y + 4, num, 'tn', side === 'L' ? 'end' : 'start');
+};
+
+/* ---------- Proteus-style test bench ---------- */
+function bench(spec) {
+  const n = Math.max(spec.left.length, spec.right.length), PS = 28, top = 56;
+  const CX = 230, CW = 150, H = top + n * PS + 40, W = 640;
+  let s = `<rect class="body" x="${CX}" y="${top - 16}" width="${CW}" height="${n * PS + 18}"/>` + tx(CX, top - 24, spec.ref, 'tb') + tx(CX + CW, top - 24, spec.part, 'tn', 'end');
+  spec.left.forEach((p, i) => {
+    const y = top + i * PS, px = CX - 30;
+    s += `<line class="pinl" x1="${px}" y1="${y}" x2="${CX}" y2="${y}"/>` + tx(CX + 6, y + 4, ov(p.name)) + tx(px + 2, y - 4, p.num, 'tn');
+    if (p.bubble) s += `<circle class="bub" cx="${CX - 5}" cy="${y}" r="4.5"/>`;
+    if (p.clockMark) s += `<path d="M${CX} ${y - 5}l7 5l-7 5" fill="none" stroke="var(--edge)" stroke-width="1.6"/>`;
+    s += leftPart(p, px, y);
+  });
+  spec.right.forEach((p, i) => {
+    const y = top + i * PS, px = CX + CW + 30;
+    s += `<line class="pinl" x1="${CX + CW}" y1="${y}" x2="${px}" y2="${y}"/>` + tx(CX + CW - 6, y + 4, ov(p.name), 't', 'end') + tx(px - 2, y - 4, p.num, 'tn', 'end');
+    s += rightPart(p, px, y, W);
+  });
+  return sheet(W, H, s);
+}
+function lsBox(x, y, v, key) { // logic state, pointing right, pin at x+0 (right side)
+  return `<g class="ls" data-k="${key}" role="button" tabindex="0" aria-label="switch ${key}, now ${v}"><path class="box ${L(v)}" d="M${x - 64} ${y - 12}H${x - 20}L${x - 10} ${y}L${x - 20} ${y + 12}H${x - 64}Z"/><text class="val" x="${x - 40}" y="${y}">${v}</text></g>` + ln(x - 10, y, x, y, v);
+}
+function lsBoxR(x, y, v, key) { // logic state on the right side, pointing left
+  return ln(x, y, x + 10, y, v) + `<g class="ls" data-k="${key}" role="button" tabindex="0" aria-label="switch ${key}, now ${v}"><path class="box ${L(v)}" d="M${x + 64} ${y - 12}H${x + 20}L${x + 10} ${y}L${x + 20} ${y + 12}H${x + 64}Z"/><text class="val" x="${x + 40}" y="${y}">${v}</text></g>`;
+}
+function probeL(x, y, v) { return ln(x - 40, y, x, y, v) + `<g class="probe"><rect class="box ${L(v)}" x="${x - 72}" y="${y - 12}" width="32" height="24"/><text class="val" x="${x - 56}" y="${y}">${v == null ? 'Z' : v}</text></g>`; }
+function probeR(x, y, v) { return ln(x, y, x + 40, y, v) + `<g class="probe"><rect class="box ${L(v)}" x="${x + 40}" y="${y - 12}" width="32" height="24"/><text class="val" x="${x + 56}" y="${y}">${v == null ? 'Z' : v}</text></g>`; }
+function leftPart(p, px, y) {
+  if (p.kind === 'gnd') return ln(px - 40, y, px, y, 0) + `<path d="M${px - 40} ${y - 9}V${y + 9}M${px - 46} ${y - 5}V${y + 5}M${px - 52} ${y - 2}V${y + 2}" stroke="var(--edge)" stroke-width="2"/>` + tx(px - 56, y + 4, 'GND', 'tn', 'end');
+  if (p.kind === 'vcc') return ln(px - 40, y, px, y, 1) + tx(px - 44, y + 4, '+5V', 'tn', 'end');
+  if (p.kind === 'clk') return ln(px - 40, y, px, y, p.v) + `<g class="btn" data-k="clk" role="button" tabindex="0" aria-label="clock pulse"><rect x="${px - 118}" y="${y - 14}" width="78" height="28" rx="5"/><path d="M${px - 110} ${y + 6}h12v-12h12v12h12" fill="none" stroke="var(--edge)" stroke-width="2"/><text class="tc" x="${px - 64}" y="${y + 4}">CLK</text></g>`;
+  if (p.kind === 'probe') return probeL(px, y, p.v);
+  return lsBox(px, y, p.v, p.key);
+}
+function rightPart(p, px, y) {
+  if (p.kind === 'sw') return lsBoxR(px, y, p.v, p.key);
+  return probeR(px, y, p.v);
+}
+
+/* ---------- ROM contents (your files) ---------- */
+const PROG = new Array(16).fill(0);
+Object.entries({0:0x09,1:0x1A,2:0x1B,3:0x2C,4:0xE0,5:0xF0,9:16,10:20,11:18,12:31}).forEach(([a, v]) => PROG[a] = v);
+const PMEAN = a => ({0:'LDA 9',1:'ADD A',2:'ADD B',3:'SUB C',4:'OUT',5:'HLT',9:'16',10:'20',11:'18',12:'31'})[a] || 'empty';
+const FETCH = [['EP','LM'],['CP'],['CE','LI']], OPS = {0:[['LM','EI'],['CE','LA'],[]], 1:[['LM','EI'],['CE','LB'],['LA','EU']], 2:[['LM','EI'],['CE','LB'],['LA','SU','EU']], 14:[['EA','LO'],[],[]], 15:[['HLT'],[],[]]};
+const R1 = ['HLT','CP','EP','LM','CE','LI','EI','LA'];
+function ctrl1(addr) { const op = addr >> 3, t = addr & 7; const act = t < 3 ? FETCH[t] : t < 6 ? ((OPS[op] || [[],[],[]])[t - 3]) : []; let v = 0; R1.forEach((n, i) => { const on = act.includes(n); if (n === 'CP' ? on : !on) v |= 1 << i; }); return v; }
+const bits = (v, n) => Array.from({length: n}, (_, i) => (v >> i) & 1);
+const num = arr => arr.reduce((a, b, i) => a | (b << i), 0);
+const bs = (v, n) => v.toString(2).padStart(n, '0');
+
+/* ================= CHIPS ================= */
+const CHIPS = {};
+
+/* ----- 74LS173 ----- */
+CHIPS.ls173 = {
+  part:'74LS173', what:'4-bit register', ref:'U3',
+  title:'74LS173 · 4-bit D register with 3-state outputs',
+  desc:'Remembers 4 bits. It only takes new data on a rising clock edge when both load pins (E1, E2) are low, and its outputs can be switched off (Z) with OE1/OE2 so it can share a bus.',
+  st:{d:[1,0,1,1], e1:0, e2:0, oe1:0, oe2:0, mr:0, clk:0, q:[0,0,0,0]},
+  clock(s) { if (!s.mr && !s.e1 && !s.e2) s.q = s.d.slice(); },
+  bench(s) {
+    const oe = !(s.oe1 || s.oe2), q = i => oe ? s.q[i] : null;
+    return bench({ref:'U1', part:'74LS173', left:[
+      ...[0,1,2,3].map(i => ({name:'D' + i, num:[14,13,12,11][i], kind:'sw', key:'d' + i, v:s.d[i]})),
+      {name:'CLK', num:7, kind:'clk', v:s.clk, clockMark:true},
+      {name:'~OE1', num:1, kind:'sw', key:'oe1', v:s.oe1}, {name:'~OE2', num:2, kind:'sw', key:'oe2', v:s.oe2},
+      {name:'E1', num:9, kind:'sw', key:'e1', v:s.e1, bubble:true}, {name:'E2', num:10, kind:'sw', key:'e2', v:s.e2, bubble:true},
+      {name:'MR', num:15, kind:'sw', key:'mr', v:s.mr}],
+      right:[0,1,2,3].map(i => ({name:'Q' + i, num:3 + i, kind:'probe', v:q(i)}))});
+  },
+  inside(s) {
+    const load = +(!s.e1 && !s.e2), oe = +(!s.oe1 && !s.oe2);
+    let o = '';
+    // control logic
+    o += port(60, 40, 'E1', 9, 'L', s.e1) + port(60, 64, 'E2', 10, 'L', s.e2);
+    const g1 = gate('nor', 110, 32, 2, [s.e1, s.e2], load); o += pl([[60, 40], [96, 40], [96, g1.in[0][1]]], s.e1) + pl([[60, 64], [96, 64], [96, g1.in[1][1]]], s.e2) + g1.s;
+    o += nl(g1.out[0] + 4, g1.out[1] + 4, 'LOAD', load) + tx(g1.out[0] + 46, g1.out[1] + 4, '= 1 only if E1 = E2 = 0', 'note');
+    o += port(60, 104, '~OE1', 1, 'L', s.oe1) + port(60, 128, '~OE2', 2, 'L', s.oe2);
+    const g2 = gate('nor', 110, 96, 2, [s.oe1, s.oe2], oe); o += pl([[60, 104], [96, 104], [96, g2.in[0][1]]], s.oe1) + pl([[60, 128], [96, 128], [96, g2.in[1][1]]], s.oe2) + g2.s;
+    o += nl(g2.out[0] + 4, g2.out[1] + 4, 'OE', oe) + tx(g2.out[0] + 30, g2.out[1] + 4, '= 1 only if OE1 = OE2 = 0', 'note');
+    o += port(60, 168, 'CLK', 7, 'L', s.clk) + ln(60, 168, 110, 168, s.clk) + nl(114, 172, 'CLK', s.clk);
+    o += port(60, 192, 'MR', 15, 'L', s.mr) + ln(60, 192, 110, 192, s.mr) + nl(114, 196, 'CLR', s.mr);
+    for (let i = 0; i < 4; i++) {
+      const y = 230 + i * 92, dv = s.d[i], qv = s.q[i], nxt = load ? dv : qv;
+      o += port(60, y + 50, 'D' + i, [14,13,12,11][i], 'L', dv) + ln(60, y + 50, 170, y + 50, dv);
+      const m = mux(170, y, qv, dv, load, nxt, '0', '1');
+      o += m.s + ln(150, y + 20, 170, y + 20, qv) + nl(146, y + 24, 'Q' + i, qv, 'end');
+      o += ln(190, y + 6, 190, y - 8, load) + nl(194, y - 4, 'LOAD', load);
+      const f = dff(290, y, s);
+      o += pl([[210, y + 35], [240, y + 35], [240, y + 15], [290, y + 15]], nxt) + f.s;
+      o += ln(262, y + 40, 290, y + 40, s.clk) + nl(258, y + 44, 'CLK', s.clk, 'end');
+      o += ln(262, y + 65, 290, y + 65, s.mr) + nl(258, y + 69, 'CLR', s.mr, 'end');
+      o += ln(360, y + 15, 420, y + 15, qv) + jd(390, y + 15, qv) + ln(390, y + 15, 390, y + 50, qv) + nl(394, y + 50, 'Q' + i + ' (back to MUX)', qv);
+      const b = tri(420, y + 15, 'R', qv, oe ? qv : null, oe);
+      o += b.s + nl(b.en[0] + 4, b.en[1] + 2, 'OE', oe);
+      o += ln(448, y + 15, 520, y + 15, oe ? qv : null) + port(520, y + 15, 'Q' + i, 3 + i, 'R', oe ? qv : null);
+    }
+    return sheet(640, 610, o);
+  },
+  hint:'Each bit is a D flip-flop. In front of it, a multiplexer chooses between the new data (D, when LOAD = 1) and its own old output (Q, when LOAD = 0), so with LOAD off the flip-flop just reloads what it already had. Behind it, a tri-state buffer connects Q to the pin only when OE = 1.',
+  now(s) {
+    const load = !s.e1 && !s.e2, oe = !s.oe1 && !s.oe2;
+    let h = s.mr ? '<b>MR = 1</b>: every flip-flop is cleared to 0 right now, whatever the clock does. ' :
+      load ? `E1 = E2 = 0, so <b>LOAD = 1</b>: the multiplexers pass D. On the next CLK pulse the register stores <b>${bs(num(s.d), 4)}</b> (D3…D0). ` :
+      `E1 or E2 is 1, so <b>LOAD = 0</b>: the multiplexers feed each Q back into its own flip-flop. A CLK pulse changes nothing; the register keeps <b>${bs(num(s.q), 4)}</b>. `;
+    h += oe ? `OE1 = OE2 = 0, so the buffers are on and the pins show <b>${bs(num(s.q), 4)}</b>.` : `OE1 or OE2 is 1, so the buffers are off and Q0–Q3 are <b>Z</b> (disconnected). The value ${bs(num(s.q), 4)} is still stored inside.`;
+    return h;
+  },
+  sap:[['U3','MAR: D = W0–W3, E1/E2 = nLM, OE grounded so the address always reaches the ROM.'],['U5 · U6','Instruction register: E = nLI. U6 has OE = nEI so it can put the operand address back on the bus.'],['U7 · U8','Accumulator: E = nLA.'],['U10 · U11','B register: E = nLB.'],['U17 · U18','Output register: E = nLO.'],['all','CLK = CLKG, MR = RESET.']]
+};
+
+/* ----- 74LS161 ----- */
+CHIPS.ls161 = {
+  part:'74LS161', what:'4-bit counter', ref:'U1',
+  title:'74LS161 · synchronous 4-bit binary counter',
+  desc:'Adds 1 on every rising clock edge while ENP and ENT are high. Pulling LOAD low loads D3–D0 instead. Pulling MR (clear) low resets it to 0 instantly.',
+  st:{d:[1,0,0,1], enp:1, ent:1, load:1, mr:1, clk:0, q:0},
+  clock(s) { if (!s.mr) return; if (!s.load) s.q = num(s.d); else if (s.enp && s.ent) s.q = (s.q + 1) & 15; },
+  bench(s) {
+    const qb = bits(s.q, 4);
+    return bench({ref:'U1', part:'74LS161', left:[
+      ...[0,1,2,3].map(i => ({name:'D' + i, num:3 + i, kind:'sw', key:'d' + i, v:s.d[i]})),
+      {name:'ENP', num:7, kind:'sw', key:'enp', v:s.enp}, {name:'ENT', num:10, kind:'sw', key:'ent', v:s.ent},
+      {name:'CLK', num:2, kind:'clk', v:s.clk, clockMark:true},
+      {name:'LOAD', num:9, kind:'sw', key:'load', v:s.load, bubble:true}, {name:'MR', num:1, kind:'sw', key:'mr', v:s.mr, bubble:true}],
+      right:[...[0,1,2,3].map(i => ({name:'Q' + i, num:14 - i, kind:'probe', v:qb[i]})), {name:'RCO', num:15, kind:'probe', v:+(s.ent && s.q === 15)}]});
+  },
+  inside(s) {
+    const q = bits(s.q, 4), ce = s.enp & s.ent;
+    let o = '';
+    o += port(60, 40, 'ENP', 7, 'L', s.enp) + port(60, 64, 'ENT', 10, 'L', s.ent);
+    const a = gate('and', 110, 32, 2, [s.enp, s.ent], ce); o += pl([[60, 40], [96, 40], [96, a.in[0][1]]], s.enp) + pl([[60, 64], [96, 64], [96, a.in[1][1]]], s.ent) + a.s + nl(a.out[0] + 4, a.out[1] + 4, 'CE', ce) + tx(a.out[0] + 26, a.out[1] + 4, 'count enable', 'note');
+    o += port(60, 100, 'LOAD', 9, 'L', s.load) + ln(60, 100, 110, 100, s.load) + nl(114, 104, 'LOAD (0 = load D)', s.load);
+    o += port(60, 124, 'CLK', 2, 'L', s.clk) + ln(60, 124, 110, 124, s.clk) + nl(114, 128, 'CLK', s.clk);
+    o += port(60, 148, 'MR', 1, 'L', s.mr) + ln(60, 148, 110, 148, s.mr) + nl(114, 152, 'MR (0 = clear)', s.mr);
+    for (let i = 0; i < 4; i++) {
+      const y = 186 + i * 100, t = ce & q.slice(0, i).reduce((x, b) => x & b, 1), cnt = q[i] ^ t, nxt = s.load ? cnt : s.d[i];
+      let tOut;
+      if (i === 0) { o += ln(150, y + 20, 196, y + 20, ce) + nl(146, y + 24, 'CE', ce, 'end'); tOut = [196, y + 20]; }
+      else {
+        const ins = [ce, ...q.slice(0, i)], g = gate('and', 110, y - 2, ins.length, ins, t);
+        g.in.forEach((p, k) => o += nl(p[0] - 3, p[1] + 4, k ? 'Q' + (k - 1) : 'CE', ins[k], 'end'));
+        o += g.s; tOut = g.out;
+        o += pl([g.out, [184, g.out[1]], [184, y + 20], [196, y + 20]], t);
+      }
+      o += tx(118, y + 66, 'T' + i + ' = CE' + (i ? '·Q0' + (i > 1 ? '…Q' + (i - 1) : '') : ''), 'note');
+      const x = gate('xor', 210, y + 12, 2, [t, q[i]], cnt);
+      o += ln(196, y + 20, x.in[0][0], x.in[0][1], t);
+      o += ln(176, x.in[1][1], x.in[1][0], x.in[1][1], q[i]) + nl(172, x.in[1][1] + 4, 'Q' + i, q[i], 'end');
+      o += tx(214, y + 66, 'Q' + i + ' ⊕ T' + i + ' (toggle)', 'note');
+      const m = mux(310, y, cnt, s.d[i], s.load, nxt, '1', '0');
+      o += pl([x.out, [300, x.out[1]], [300, y + 20], [310, y + 20]], cnt) + m.s;
+      o += port(60, y + 82, 'D' + i, 3 + i, 'L', s.d[i]) + pl([[60, y + 82], [296, y + 82], [296, y + 50], [310, y + 50]], s.d[i]);
+      o += ln(330, y + 6, 330, y - 6, s.load) + nl(334, y - 2, 'LOAD', s.load);
+      const f = dff(400, y - 4, s, 'MR');
+      o += pl([[350, y + 35], [372, y + 35], [372, y + 11], [400, y + 11]], nxt) + f.s;
+      o += ln(380, y + 36, 400, y + 36, s.clk) + nl(376, y + 40, 'CLK', s.clk, 'end');
+      o += ln(380, y + 61, 400, y + 61, s.mr) + nl(376, y + 65, 'MR', s.mr, 'end');
+      o += ln(470, y + 11, 560, y + 11, q[i]) + port(560, y + 11, 'Q' + i, 14 - i, 'R', q[i]);
+      o += jd(500, y + 11, q[i]) + ln(500, y + 11, 500, y + 40, q[i]) + nl(504, y + 44, 'Q' + i + ' (feedback)', q[i]);
+    }
+    const rco = s.ent & q.every(b => b);
+    const r = gate('and', 400, 590, 5, [s.ent, ...q], rco);
+    r.in.forEach((p, k) => o += nl(p[0] - 3, p[1] + 4, k ? 'Q' + (k - 1) : 'ENT', k ? q[k - 1] : s.ent, 'end'));
+    o += r.s + ln(r.out[0], r.out[1], 560, r.out[1], rco) + port(560, r.out[1], 'RCO', 15, 'R', rco);
+    return sheet(660, 690, o);
+  },
+  hint:'Each bit is a D flip-flop that toggles when every lower bit is 1 (that is how binary counting works: 0111 + 1 = 1000). The AND gates make those toggle signals T0–T3, the XOR does the toggling, and a multiplexer swaps in D when LOAD is low. MR goes straight to the flip-flops, so clearing does not wait for the clock.',
+  now(s) {
+    if (!s.mr) return '<b>MR = 0</b>: all four flip-flops are forced to 0 right now. Set MR back to 1 to count.';
+    if (!s.load) return `<b>LOAD = 0</b>: the multiplexers pick D. The next CLK pulse loads <b>${bs(num(s.d), 4)}</b> (= ${num(s.d)}) into the counter.`;
+    if (!(s.enp && s.ent)) return `ENP or ENT is 0, so CE = 0 and every toggle signal T is 0. A CLK pulse keeps the count at <b>${bs(s.q, 4)}</b> (paused).`;
+    const n = (s.q + 1) & 15, flip = bits(s.q ^ n, 4).map((b, i) => b ? 'Q' + i : null).filter(Boolean);
+    return `Counting. Now <b>${bs(s.q, 4)}</b> (${s.q}). The next CLK pulse gives <b>${bs(n, 4)}</b> (${n}): bits ${flip.join(', ')} toggle because all the bits below them are 1.` + (s.q === 15 ? ' RCO is 1 because the count is 1111: a second counter could use it to count the carry.' : '');
+  },
+  sap:[['U1','Program counter. CLK = CLKG, ENP = ENT = CP (counts only during T2), LOAD tied high, MR = nRESET. Q0–Q3 = PC0–PC3.'],['U19','Step counter. CLK = nCLKG, ENP = ENT = LOAD = high, MR = nCLRSTEP. Q0–Q2 = S0–S2 (T1–T6).']]
+};
+
+/* ----- 74LS245 ----- */
+CHIPS.ls245 = {
+  part:'74LS245', what:'bus transceiver', ref:'U2',
+  title:'74LS245 · 8-bit bus transceiver (two-way door)',
+  desc:'Eight buffers in each direction between side A and side B. CE (output enable) low opens the door; DIR picks the direction. With CE high both sides are disconnected.',
+  st:{a:[1,0,1,1,0,0,1,0], b:[0,1,1,0,0,1,0,1], ce:0, dir:1},
+  bench(s) {
+    const ab = !s.ce && s.dir, ba = !s.ce && !s.dir;
+    return bench({ref:'U2', part:'74LS245', left:[
+      ...[0,1,2,3,4,5,6,7].map(i => ba ? {name:'A' + i, num:2 + i, kind:'probe', v:s.b[i]} : {name:'A' + i, num:2 + i, kind:'sw', key:'a' + i, v:s.a[i]}),
+      {name:'~CE', num:19, kind:'sw', key:'ce', v:s.ce}, {name:'AB/~BA', num:1, kind:'sw', key:'dir', v:s.dir}],
+      right:[0,1,2,3,4,5,6,7].map(i => ab ? {name:'B' + i, num:18 - i, kind:'probe', v:s.a[i]} : {name:'B' + i, num:18 - i, kind:'sw', key:'b' + i, v:s.b[i]})});
+  },
+  inside(s) {
+    const en = +!s.ce, ab = en & s.dir, ba = en & +!s.dir;
+    let o = '';
+    o += port(60, 40, '~CE', 19, 'L', s.ce);
+    const n1 = inv(100, 40, s.ce, en); o += ln(60, 40, 86, 40, s.ce) + n1.s + nl(n1.out[0] + 4, 44, 'EN', en);
+    o += port(60, 80, 'DIR', 1, 'L', s.dir);
+    const g1 = gate('and', 260, 24, 2, [en, s.dir], ab); o += g1.s + nl(g1.in[0][0] - 3, g1.in[0][1] + 4, 'EN', en, 'end') + nl(g1.in[1][0] - 3, g1.in[1][1] + 4, 'DIR', s.dir, 'end') + nl(g1.out[0] + 4, g1.out[1] + 4, 'A→B', ab);
+    const n2 = inv(100, 104, s.dir, +!s.dir); o += pl([[60, 80], [80, 80], [80, 104], [86, 104]], s.dir) + ln(60, 80, 140, 80, s.dir) + nl(144, 84, 'DIR', s.dir) + n2.s;
+    const g2 = gate('and', 260, 84, 2, [en, +!s.dir], ba); o += g2.s + nl(g2.in[0][0] - 3, g2.in[0][1] + 4, 'EN', en, 'end') + ln(n2.out[0], 104, g2.in[1][0], g2.in[1][1], +!s.dir) + nl(g2.out[0] + 4, g2.out[1] + 4, 'B→A', ba);
+    for (let i = 0; i < 8; i++) {
+      const y = 170 + i * 58;
+      const aV = ba ? s.b[i] : s.a[i], bV = ab ? s.a[i] : s.b[i];
+      o += port(60, y, 'A' + i, 2 + i, 'L', aV) + ln(60, y, 150, y, aV) + jd(150, y, aV);
+      o += pl([[150, y], [150, y - 10], [230, y - 10]], aV);
+      const t1 = tri(230, y - 10, 'R', aV, ab ? aV : null, ab); o += t1.s + nl(t1.en[0] + 4, t1.en[1] + 2, 'A→B', ab);
+      o += pl([[258, y - 10], [400, y - 10], [400, y]], ab ? aV : null);
+      o += pl([[150, y], [150, y + 14], [300, y + 14]], ba ? bV : null);
+      const t2 = tri(300, y + 14, 'L', bV, ba ? bV : null, ba); o += t2.s + nl(t2.en[0] + 4, t2.en[1] + 2, 'B→A', ba);
+      o += pl([[328, y + 14], [400, y + 14], [400, y]], bV);
+      o += jd(400, y, bV) + ln(400, y, 500, y, bV) + port(500, y, 'B' + i, 18 - i, 'R', bV);
+    }
+    return sheet(620, 640, o);
+  },
+  hint:'Every bit has two tri-state buffers facing opposite ways. The small gates at the top turn CE and DIR into two enable lines: A→B switches on the right-facing buffers, B→A the left-facing ones. Only one set can be on, and with CE = 1 neither is, so both sides float.',
+  now(s) {
+    if (s.ce) return '<b>CE = 1</b>: EN = 0, so both enable lines are 0 and all 16 buffers are off. Side A and side B are completely disconnected: the chip is invisible on the bus.';
+    return s.dir ? `CE = 0 and <b>DIR = 1</b>: A→B is on. The right-facing buffers copy side A (<b>${bs(num(s.a), 8)}</b>) onto side B. Flip the A switches and watch B follow instantly (no clock needed).`
+                 : `CE = 0 and <b>DIR = 0</b>: B→A is on. The left-facing buffers copy side B (<b>${bs(num(s.b), 8)}</b>) onto side A. The B pins are now inputs.`;
+  },
+  sap:[['U2','Program counter → bus. A0–A3 = PC0–PC3 (A4–A7 grounded), B = W0–W7, CE = nEP, DIR = high.'],['U9','Accumulator → bus. A = A0–A7, CE = nEA.'],['U16','Adder result → bus. A = SUM0–SUM7, CE = nEU.'],['why','The W bus is shared. Each of these chips stays at CE = 1 (disconnected) until the controller lets exactly one of them talk.']]
+};
+
+/* ----- 74LS283 ----- */
+CHIPS.ls283 = {
+  part:'74LS283', what:'4-bit adder', ref:'U14',
+  title:'74LS283 · 4-bit binary full adder',
+  desc:'Adds two 4-bit numbers A and B plus a carry-in C0. Gives a 4-bit sum S and a carry-out C4. No clock: the answer changes the moment an input changes.',
+  st:{a:[1,0,0,1], b:[1,1,0,0], c0:0},
+  bench(s) {
+    const sum = num(s.a) + num(s.b) + s.c0, S = bits(sum & 15, 4);
+    return bench({ref:'U14', part:'74LS283', left:[
+      ...[0,1,2,3].map(i => ({name:'A' + i, num:[5,3,14,12][i], kind:'sw', key:'a' + i, v:s.a[i]})),
+      ...[0,1,2,3].map(i => ({name:'B' + i, num:[6,2,15,11][i], kind:'sw', key:'b' + i, v:s.b[i]})),
+      {name:'C0', num:7, kind:'sw', key:'c0', v:s.c0}],
+      right:[...[0,1,2,3].map(i => ({name:'S' + i, num:[4,1,13,10][i], kind:'probe', v:S[i]})), {name:'C4', num:9, kind:'probe', v:sum >> 4}]});
+  },
+  inside(s) {
+    let o = '', c = s.c0;
+    o += port(60, 30, 'C0', 7, 'L', s.c0) + ln(60, 30, 110, 30, s.c0) + nl(114, 34, 'C0', s.c0);
+    for (let i = 0; i < 4; i++) {
+      const y = 60 + i * 140, a = s.a[i], b = s.b[i], p = a ^ b, g = a & b, sm = p ^ c, pc = p & c, co = g | pc;
+      o += `<rect x="20" y="${y - 6}" width="600" height="128" rx="6" fill="none" stroke="var(--grid)" stroke-width="1.5" stroke-dasharray="4 4"/>` + tx(612, y + 8, 'full adder, bit ' + i, 'tn', 'end');
+      o += port(60, y + 20, 'A' + i, [5,3,14,12][i], 'L', a) + port(60, y + 44, 'B' + i, [6,2,15,11][i], 'L', b);
+      o += ln(60, y + 20, 100, y + 20, a) + jd(100, y + 20, a) + ln(60, y + 44, 90, y + 44, b) + jd(90, y + 44, b);
+      const x1 = gate('xor', 140, y + 12, 2, [a, b], p);
+      o += pl([[100, y + 20], [126, y + 20], [126, x1.in[0][1]]], a) + pl([[90, y + 44], [118, y + 44], [118, x1.in[1][1]], [126, x1.in[1][1]]], b) + x1.s;
+      const a1 = gate('and', 140, y + 72, 2, [a, b], g);
+      o += pl([[100, y + 20], [100, a1.in[0][1]], [126, a1.in[0][1]]], a) + pl([[90, y + 44], [90, a1.in[1][1]], [126, a1.in[1][1]]], b) + a1.s;
+      o += tx(150, y + 70, 'A⊕B = P', 'note') + tx(150, y + 128, 'A·B = G', 'note');
+      // second half
+      const cy = y + 4;
+      o += nl(250, cy + 4, 'C' + i, c, 'end') + ln(254, cy, 290, cy, c) + jd(290, cy, c);
+      const x2 = gate('xor', 320, y + 12, 2, [p, c], sm);
+      o += pl([x1.out, [300, x1.out[1]], [300, x2.in[0][1]], [306, x2.in[0][1]]], p) + jd(300, x1.out[1], p);
+      o += pl([[290, cy], [290, x2.in[1][1]], [306, x2.in[1][1]]], c) + x2.s;
+      o += ln(x2.out[0], x2.out[1], 560, x2.out[1], sm) + port(560, x2.out[1], 'S' + i, [4,1,13,10][i], 'R', sm);
+      const a2 = gate('and', 320, y + 62, 2, [p, c], pc);
+      o += pl([[300, x1.out[1]], [300, a2.in[0][1]], [306, a2.in[0][1]]], p) + pl([[290, cy], [290, a2.in[1][1]], [306, a2.in[1][1]]], c) + a2.s;
+      const or = gate('or', 440, y + 72, 2, [pc, g], co);
+      o += pl([a2.out, [420, a2.out[1]], [420, or.in[0][1]], [426, or.in[0][1]]], pc) + pl([a1.out, [210, a1.out[1]], [210, y + 116], [414, y + 116], [414, or.in[1][1]], [426, or.in[1][1]]], g) + or.s;
+      o += tx(326, y + 60, 'P⊕C = sum', 'note');
+      if (i < 3) o += ln(or.out[0], or.out[1], 530, or.out[1], co) + nl(534, or.out[1] + 4, 'C' + (i + 1) + ' → next bit', co);
+      else o += ln(or.out[0], or.out[1], 560, or.out[1], co) + port(560, or.out[1], 'C4', 9, 'R', co);
+      c = co;
+    }
+    return sheet(660, 630, o);
+  },
+  hint:'Four full adders in a chain. Each one adds A + B + carry-in: two XOR gates make the sum bit, two ANDs and an OR make the carry-out, which becomes the next bit\'s carry-in. (The real 74LS283 computes all carries at once with "look-ahead" logic so it is faster, but the result is identical.)',
+  now(s) {
+    const A = num(s.a), B = num(s.b), sum = A + B + s.c0;
+    return `<b>${bs(A, 4)}</b> (${A}) + <b>${bs(B, 4)}</b> (${B}) + C0 (${s.c0}) = ${sum} → S = <b>${bs(sum & 15, 4)}</b>, C4 = <b>${sum >> 4}</b>` + (sum > 15 ? `. ${sum} is more than 15, so the 16 goes out on C4.` : '.') +
+      ` <br>To subtract, the SAP-1 sets C0 = 1 and inverts every B bit first (XOR gates U12/U13): try B = ${bs((~B) & 15, 4)} with C0 = 1 and you get A − B = ${(A - B) & 15}${A < B ? ' (wrapped, A < B)' : ''}.`;
+  },
+  sap:[['U14','Low 4 bits: A0–A3 + XB0–XB3, C0 = SU (1 when subtracting), C4 → CARRY.'],['U15','High 4 bits: A4–A7 + XB4–XB7, C0 = CARRY from U14.'],['U12 · U13','74LS86 XOR gates in front of B: XB = B when SU = 0, XB = NOT B when SU = 1. Together with C0 = 1 this makes A − B.'],['U16','74LS245 that puts SUM0–SUM7 on the bus when nEU is low.']]
+};
+
+/* ----- 2764 ----- */
+CHIPS.rom = {
+  part:'2764', what:'EPROM memory', ref:'U4',
+  title:'2764 · 8K × 8 EPROM (read-only memory)',
+  desc:'A table of 8192 bytes. The address pins pick one row; with CE and OE low the 8 data pins show that row. Your SAP-1 grounds A4–A12, so only the first 16 rows are used.',
+  st:{a:[0,0,0,0], ce:0, oe:0, img:'prog'},
+  data(s) { const addr = num(s.a); return s.img === 'prog' ? PROG[addr] : ctrl1(addr); },
+  bench(s) {
+    const on = !s.ce && !s.oe, D = bits(this.data(s), 8);
+    return bench({ref:s.img === 'prog' ? 'U4' : 'U20', part:'2764', left:[
+      ...[0,1,2,3].map(i => ({name:'A' + i, num:10 - i, kind:'sw', key:'a' + i, v:s.a[i]})),
+      {name:'A4–A12', num:'', kind:'gnd'},
+      {name:'~CE', num:20, kind:'sw', key:'ce', v:s.ce}, {name:'~OE', num:22, kind:'sw', key:'oe', v:s.oe},
+      {name:'VPP', num:1, kind:'vcc'}, {name:'~PGM', num:27, kind:'vcc'}],
+      right:[0,1,2,3,4,5,6,7].map(i => ({name:'D' + i, num:[11,12,13,15,16,17,18,19][i], kind:'probe', v:on ? D[i] : null}))});
+  },
+  inside(s) {
+    const addr = num(s.a), on = +(!s.ce && !s.oe);
+    const rows = Array.from({length:16}, (_, r) => s.img === 'prog' ? PROG[r] : ctrl1(r));
+    let o = '';
+    [0,1,2,3].forEach(i => o += port(60, 40 + i * 26, 'A' + i, 10 - i, 'L', s.a[i]) + ln(60, 40 + i * 26, 110, 40 + i * 26, s.a[i]));
+    o += tx(14, 150, 'A4–A12 = 0 (GND)', 'note');
+    o += `<rect class="body" x="110" y="24" width="64" height="${16 * 26 + 10}"/>` + tx(142, 20, 'DECODER', 'tn', 'middle') + tx(142, 140, '4 → 16', 'tn', 'middle');
+    const X0 = 250, CW = 34, RY = r => 40 + r * 26;
+    for (let r = 0; r < 16; r++) {
+      const sel = +(r === addr), y = RY(r);
+      if (sel) o += `<rect class="row-sel" x="${X0 - 70}" y="${y - 12}" width="${8 * CW + 80}" height="24" rx="4"/>`;
+      o += ln(174, y, X0 + 8 * CW, y, sel) + tx(186, y - 3, 'row ' + r, 'tn');
+      for (let c = 0; c < 8; c++) {
+        const bit = (rows[r] >> (7 - c)) & 1, x = X0 + c * CW;
+        o += `<rect class="cell ${bit ? 'h' : 'l'}" x="${x + 6}" y="${y - 9}" width="${CW - 12}" height="18" rx="3" ${sel ? '' : 'opacity=".45"'}/><text class="ctxt" x="${x + CW / 2}" y="${y}">${bit}</text>`;
+      }
+      o += tx(X0 + 8 * CW + 8, y + 4, '= ' + rows[r].toString(16).toUpperCase().padStart(2, '0') + 'h', 'tn');
+    }
+    const sel = rows[addr];
+    const by = RY(15) + 30;
+    for (let c = 0; c < 8; c++) {
+      const bitNo = 7 - c, bit = (sel >> bitNo) & 1, x = X0 + c * CW + CW / 2;
+      o += ln(x, RY(15) + 12, x, by, bit);
+      o += `<g transform="rotate(90 ${x} ${by + 14})">` + tri(x - 14, by + 14, 'R', bit, on ? bit : null, on).s.replace(/<line[^>]*\/>$/, '') + '</g>';
+      o += ln(x, by + 28, x, by + 64, on ? bit : null) + port(x - 25, by + 74, 'D' + bitNo, '', 'R', on ? bit : null).replace(/width="50"/, 'width="50"');
+    }
+    o += tx(X0 - 70, by + 18, 'column', 'tn') + tx(X0 - 70, by + 30, 'buffers', 'tn');
+    o += port(60, 520, '~CE', 20, 'L', s.ce) + port(60, 546, '~OE', 22, 'L', s.oe);
+    const g = gate('nor', 110, 512, 2, [s.ce, s.oe], on);
+    o += ln(60, 520, g.in[0][0], g.in[0][1], s.ce) + ln(60, 546, g.in[1][0], g.in[1][1], s.oe) + g.s + nl(g.out[0] + 4, g.out[1] + 4, 'OUT EN', on);
+    o += tx(14, 584, 'OUT EN drives the enable of every column buffer', 'note');
+    return sheet(660, 640, o);
+  },
+  hint:'The decoder turns the 4 address bits into one "row select" line out of 16 (yellow row). Each row is 8 stored bits. The selected row drives the 8 column lines, and tri-state buffers at the bottom pass them to D0–D7 only when CE and OE are both low.',
+  now(s) {
+    const addr = num(s.a), d = this.data(s), on = !s.ce && !s.oe;
+    let h = `Address A3…A0 = <b>${bs(addr, 4)}</b> → the decoder selects <b>row ${addr}</b>, which stores <b>${bs(d, 8)}</b> (${d.toString(16).toUpperCase().padStart(2, '0')}h)`;
+    h += s.img === 'prog' ? `, your program byte "${PMEAN(addr)}". ` : `, the control word for opcode ${bs(addr >> 3, 1)}xxx step T${(addr & 7) + 1}. `;
+    h += on ? 'CE = OE = 0, so the buffers are on and D7…D0 show it.' : '<b>CE or OE is 1</b>: the buffers are off and D0–D7 are Z. In the SAP-1, U4\'s OE is nCE, so memory only talks during T3 and T5.';
+    return h;
+  },
+  sap:[['U4','Program memory. A0–A3 = MA0–MA3 from the MAR, D0–D7 = W bus, OE = nCE, image PROGRAM_ROM.BIN.'],['U20 · U21','Control ROMs (the controller). A0–A2 = step S0–S2, A3–A6 = opcode OP0–OP3, always enabled; outputs are the control signals. Switch the image above to see U20\'s table.']]
+};
+
+/* ================= page ================= */
+const ORDER = ['ls173','ls161','ls245','ls283','rom'];
+let cur = ORDER[0];
+ORDER.forEach(id => { const c = CHIPS[id]; c.init = JSON.parse(JSON.stringify(c.st)); const b = document.createElement('button'); b.role = 'tab'; b.id = 'tab-' + id; b.innerHTML = `<b>${c.part}</b><span>${c.what}</span>`; b.onclick = () => go(id); $('tabs').appendChild(b); });
+function go(id) { cur = id; try { history.replaceState(null, '', '#' + id); } catch (e) {} draw(); }
+function setKey(c, k) {
+  const s = c.st;
+  if (k === 'clk') { s.clk = 1; c.clock && c.clock(s); draw(); setTimeout(() => { s.clk = 0; draw(); }, 350); return; }
+  const m = k.match(/^([a-z]+)(\d)$/);
+  if (m && Array.isArray(s[m[1]])) s[m[1]][+m[2]] ^= 1; else s[k] ^= 1;
+  if (c === CHIPS.ls173 && s.mr) s.q = [0,0,0,0];
+  if (c === CHIPS.ls161 && !s.mr) s.q = 0;
+  draw();
+}
+function draw() {
+  const c = CHIPS[cur], s = c.st;
+  [...$('tabs').children].forEach((b, i) => b.setAttribute('aria-selected', ORDER[i] === cur));
+  $('head').innerHTML = `<h2>${c.title}</h2><p>${c.desc}</p>`;
+  let ctl = '';
+  if (c.clock) ctl += `<button class="clk" id="pulse">CLK pulse ↑</button>`;
+  if (cur === 'rom') ctl += `<label for="img" class="hint" style="font-size:13.5px">Memory contents</label><select id="img"><option value="prog">U4 · PROGRAM_ROM.BIN (your program)</option><option value="c1">U20 · CONTROL_ROM1.BIN (first 16 rows)</option></select>`;
+  ctl += `<button id="rs">Reset this bench</button>`;
+  $('ctl').innerHTML = ctl;
+  if ($('pulse')) $('pulse').onclick = () => setKey(c, 'clk');
+  if ($('img')) { $('img').value = s.img; $('img').onchange = e => { s.img = e.target.value; draw(); }; }
+  $('rs').onclick = () => { c.st = JSON.parse(JSON.stringify(c.init)); draw(); };
+  $('bench').innerHTML = c.bench(s);
+  $('inside').innerHTML = c.inside(s);
+  $('insideHint').textContent = c.hint;
+  $('now').innerHTML = c.now(s);
+  $('sap').innerHTML = c.sap.map(([u, t]) => `<tr><td>${u}</td><td>${t}</td></tr>`).join('');
+  document.querySelectorAll('#bench [data-k]').forEach(g => {
+    const fire = () => setKey(c, g.dataset.k);
+    g.addEventListener('click', fire);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); } });
+  });
+}
+const h = (location.hash || '').slice(1);
+go(ORDER.includes(h) ? h : ORDER[0]);
+})();
+</script>
+
+</body></html>
