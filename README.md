@@ -11,6 +11,10 @@ Malvino's **Simple-As-Possible (SAP-1)** 8-bit computer, built from 74LS-series 
 | [Chip Field Guide](https://muhammad345ishar.github.io/sap1-proteus/sap1-chip-guide.html) | Every non-gate IC with its DIP pinout and a mini simulator |
 | [IC Workbench](https://muhammad345ishar.github.io/sap1-proteus/sap1-ic-workbench.html) | Each chip on its own test bench with live internal logic |
 | [SAP-1 Lab](https://muhammad345ishar.github.io/sap1-proteus/sap1-lab.html) | Drive the control pins yourself, or let the sequencer run |
+| [Controller Sequencer](https://muhammad345ishar.github.io/sap1-proteus/sap1-controller-sequencer.html) | Decoder, step counter and the gate matrix behind the 12 control signals |
+| [Modified SAP-1 Explorer](https://muhammad345ishar.github.io/sap1-proteus/modified-sap1-explorer.html) | 1-, 2-, 3- and 4-byte machines: states, address path, control matrix and program trace |
+| [Variable-Length SAP-1](https://muhammad345ishar.github.io/sap1-proteus/variable-length-sap1.html) | LEN signal and the T3 → T7 skip in the 9-bit ring counter, with Verilog |
+| [SAP-1 Revision Kit](https://muhammad345ishar.github.io/sap1-proteus/sap1-revision-kit.html) | Hardware bench widgets, revision tables and a quiz |
 
 ## The machine
 - 8-bit W bus, 4-bit program counter and MAR, 16 bytes of memory

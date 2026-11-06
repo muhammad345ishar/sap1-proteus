@@ -1,0 +1,444 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SAP-1 Revision Kit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-bench console (SAP-1 series) — chapter-ordered bench widgets, then revision tables and a quiz */
+:root {
+  --bg: #e9edf1; --surface: #ffffff; --ink: #18212b; --muted: #5a6877; --line: #c8d1db;
+  --hi: #d9861a; --hi-soft: #fbe8cc; --lo: #9aa7b5;
+  --accent: #2c5a86; --accent-soft: #dce7f2;
+  --ad: #1f7a6d; --ad-soft: #d5ece8;
+  --bad: #b8453a; --bad-soft: #f6dcd8;
+  --display: "Chakra Petch", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+    --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+    --ad: #5cc4b3; --ad-soft: #12312c; --bad: #ef8a7e; --bad-soft: #3a1c19; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+  --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+  --ad: #5cc4b3; --ad-soft: #12312c; --bad: #ef8a7e; --bad-soft: #3a1c19; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; line-height: 1.1; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+h3 { font-size: .95rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 70ch; margin-top: 6px; }
+.ov { text-decoration: overline; text-decoration-thickness: 1.5px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px; }
+nav.toc a { font-family: var(--mono); font-size: .76rem; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; text-decoration: none; }
+nav.toc a:hover { text-decoration: underline; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; scroll-margin-top: 12px; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.hint { font-size: .8rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid2 > * { min-width: 0; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.group-label { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+button {
+  font-family: var(--mono); font-size: .85rem; font-weight: 500; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.bit { width: 34px; padding: 7px 0; text-align: center; }
+.bit[aria-pressed="true"] { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+input, select { font-family: var(--mono); font-size: .9rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+input[type=number] { width: 92px; }
+.pill { font-family: var(--mono); font-size: .75rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.pill.warn { background: var(--hi-soft); color: var(--hi); }
+.pill.ok { background: var(--ad-soft); color: var(--ad); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.out { font-family: var(--mono); font-size: .9rem; display: flex; flex-direction: column; gap: 4px; }
+.out b { color: var(--hi); }
+.big { font-family: var(--display); font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+th { font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td.m { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.c, th.c { text-align: center; }
+tr.cur td { background: var(--hi-soft); }
+.tbl { min-width: 560px; }
+svg { width: 100%; height: auto; display: block; }
+.note { font-size: .84rem; color: var(--muted); border-left: 3px solid var(--ad); padding: 4px 0 4px 10px; max-width: 80ch; }
+.note b { color: var(--ink); }
+.warnbox { font-size: .84rem; border-left: 3px solid var(--bad); padding: 4px 0 4px 10px; color: var(--muted); }
+.warnbox b { color: var(--bad); }
+.regbits { display: flex; gap: 4px; }
+.regbits span { width: 30px; text-align: center; font-family: var(--mono); padding: 5px 0; border-radius: 5px; border: 1px solid var(--line); }
+.regbits span.one { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+.regbits span.z { color: var(--muted); font-size: .7rem; padding-top: 7px; }
+.ff { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.ff div { border: 1px solid var(--line); border-radius: 6px; text-align: center; padding: 6px 0; font-family: var(--mono); }
+.ff div.on { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+ul.rev { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 5px; }
+.quiz { display: flex; flex-direction: column; gap: 14px; }
+.q { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.q .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.q button.right { background: var(--ad); border-color: var(--ad); color: var(--surface); }
+.q button.wrong { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+.q .why { font-size: .84rem; color: var(--muted); }
+footer { font-size: .78rem; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DLD · Weeks 7–8 · Part I and revision</div>
+    <h1>SAP-1 Revision Kit</h1>
+    <p class="lede">Bench widgets for the hardware ideas in the notes (bus rule, ring counter, HLT gate, tri-states, 74LS173, adder/subtractor, 74LS189 loading), then the revision tables, common mistakes and a quick quiz. Opcodes follow the notes: LDA 0000, ADD 0001, SUB 0010, OUT 0011, HLT 1111.</p>
+    <nav class="toc" style="margin-top:12px">
+      <a href="#bus">W-bus rule</a><a href="#ring">Ring + HLT</a><a href="#tri">Tri-state</a><a href="#ls173">74LS173</a><a href="#addsub">Adder/sub</a><a href="#ls189">74LS189</a><a href="#tables">Tables</a><a href="#mistakes">Mistakes</a><a href="#quiz">Quiz</a>
+    </nav>
+  </header>
+
+  <section class="panel" id="bus">
+    <div class="panel-head"><h2>W-bus: one sender, one receiver</h2><span class="hint">tick the enables and loads that are on in one step</span></div>
+    <div class="grid2">
+      <div class="stack">
+        <div><div class="group-label">Senders (enable)</div><div class="row" id="snd"></div></div>
+        <div><div class="group-label">Receivers (load)</div><div class="row" id="rcv"></div></div>
+        <div class="row" id="busres"></div>
+        <div class="out" id="bustxt"></div>
+      </div>
+      <div class="scroll"><table class="tbl" style="min-width:380px"><tr><th>Sender</th><th>Enable</th><th>Allowed receivers</th></tr>
+        <tr><td>Program counter</td><td class="m">Ep</td><td>MAR</td></tr>
+        <tr><td>IR low nibble (address)</td><td class="m">EI</td><td>MAR</td></tr>
+        <tr><td>Memory</td><td class="m"><span class="ov">CE</span></td><td>IR, A, B</td></tr>
+        <tr><td>Accumulator</td><td class="m">EA</td><td>Output register</td></tr>
+        <tr><td>Adder/subtractor</td><td class="m">Eu</td><td>A</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel" id="ring">
+      <div class="panel-head"><h2>6-bit ring counter</h2><span class="hint">FF1 preset to 1, FF2–FF6 cleared · Q6 → D1</span></div>
+      <div class="ff" id="ffs"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="r-clk" class="primary">Clock pulse</button>
+        <button id="r-hlt" aria-pressed="false">HLT line = 0</button>
+        <button id="r-rst">Reset</button>
+      </div>
+      <svg id="gate" viewBox="0 0 420 120" style="margin-top:12px" role="img" aria-label="HLT clock gate"></svg>
+      <p class="note">Gated clock = CLK·<span class="ov">HLT</span>. A NOT gate inverts the HLT decoder line and an AND gate lets the clock through only while HLT = 0. Turn HLT on and the pulses stop reaching the ring.</p>
+    </div>
+    <div class="panel" id="tri">
+      <div class="panel-head"><h2>Tri-state buffer</h2><span class="hint">third state: Hi-Z, disconnected from the wire</span></div>
+      <div class="row">
+        <button id="t-type" aria-pressed="false">bufif1</button>
+        <button id="t-c">C = 1</button>
+        <button id="t-i">I = 1</button>
+      </div>
+      <svg id="trisvg" viewBox="0 0 420 110" style="margin-top:10px" role="img" aria-label="Tri-state buffer"></svg>
+      <div class="out" id="tritxt"></div>
+      <p class="note" style="margin-top:10px">bufif1: C = 1 connects, C = 0 gives Hi-Z. bufif0 is the opposite. The <b>74LS126</b> is a quad tri-state buffer with active-high control, so 8 bits need two chips (used on the accumulator, controlled by EA).</p>
+    </div>
+  </section>
+
+  <section class="panel" id="ls173">
+    <div class="panel-head"><h2>74LS173 · 4-bit register with tri-state outputs</h2><span class="hint">every SAP-1 register is built from this chip</span></div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="row"><span class="group-label" style="width:90px">Output M N</span><button class="bit" id="p-m">0</button><button class="bit" id="p-n">0</button></div>
+        <div class="row"><span class="group-label" style="width:90px">Load G1 G2</span><button class="bit" id="p-g1">0</button><button class="bit" id="p-g2">0</button></div>
+        <div class="row"><span class="group-label" style="width:90px">CLR</span><button class="bit" id="p-clr">0</button></div>
+        <div class="row"><span class="group-label" style="width:90px">D3 … D0</span><span id="p-d"></span></div>
+        <div class="row"><button class="primary" id="p-clk">Rising clock edge ↑</button></div>
+        <div class="row"><span class="group-label" style="width:90px">Stored Q</span><span class="regbits" id="p-q"></span></div>
+        <div class="row"><span class="group-label" style="width:90px">Output pins</span><span class="regbits" id="p-o"></span></div>
+        <div class="row" id="p-msg"></div>
+      </div>
+      <div class="stack">
+        <p class="note"><b>Load:</b> G1 and G2 both low, data taken on the rising edge. <b>Outputs:</b> M and N both low, else Hi-Z. <b>CLR</b> high clears all four bits at once.</p>
+        <p class="note"><b>SAP-1 trick:</b> tie G1 and G2 together and drive them with the active-low load signal (<span class="ov">Lm</span>, <span class="ov">LI</span>, <span class="ov">LA</span>, <span class="ov">LB</span>, <span class="ov">Lo</span>). Ground M and N when the register should always show its value (MAR, B, A to the adder, output register); drive them only when the register writes to the bus (IR address nibble).</p>
+        <p class="note">Standard pin pairs: Q0/D0 on pins 3/14, Q1/D1 on 4/13, Q2/D2 on 5/12, Q3/D3 on 6/11. M = 1, N = 2, CLK = 7, G1 = 9, G2 = 10, CLR = 15. The handwritten sketch orders Q/D differently; check the datasheet before wiring.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="addsub">
+    <div class="panel-head"><h2>8-bit adder/subtractor</h2><span class="hint">two 7483 + two 74LS86 (XOR) + tri-state output stage on Eu</span></div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="row"><label class="group-label" for="as-a" style="width:60px">A</label><input id="as-a" type="number" min="-128" max="127" value="14"><span class="mono hint" id="as-ab"></span></div>
+        <div class="row"><label class="group-label" for="as-b" style="width:60px">B</label><input id="as-b" type="number" min="-128" max="127" value="3"><span class="mono hint" id="as-bb"></span></div>
+        <div class="row"><span class="group-label" style="width:60px">Su</span><button id="as-su" aria-pressed="true">Su = 1 · subtract</button></div>
+        <div class="out" id="as-out"></div>
+      </div>
+      <div class="stack">
+        <p class="note"><b>A − B = A + B̅ + 1.</b> Each B bit goes through an XOR with Su. Su = 0 passes B unchanged with carry-in 0 (add). Su = 1 inverts B and feeds carry-in C0 = 1 (subtract).</p>
+        <p class="note">The adder stores nothing. Its output follows A and B all the time, and A only takes the result when Eu is on and <span class="ov">LA</span> = 0 (T6). Range in 2's complement: −128 to +127.</p>
+        <p class="note">The box labelled "OB/2" in the handwritten page is the second half of the XOR row (B7–B4), drawn as one box.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="ls189">
+    <div class="panel-head"><h2>74LS189 RAM and program loading</h2><span class="hint">16 × 4 per chip, two chips give 16 × 8 · outputs are inverted</span></div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="row">
+          <select id="ld-ins" aria-label="Instruction"><option>LDA</option><option>ADD</option><option>SUB</option><option>OUT</option><option>HLT</option><option>data</option></select>
+          <input id="ld-val" type="number" min="0" max="15" value="10" aria-label="Address or data value">
+        </div>
+        <div class="out" id="ld-out"></div>
+        <div class="row"><span class="group-label">CS̅ WE̅</span><button class="bit" id="m-cs">0</button><button class="bit" id="m-we">1</button><span class="pill" id="m-mode"></span></div>
+        <p class="warnbox"><b>Outputs are complemented.</b> To read back the true word, enter its complement on the data switches (or add inverters). The notes' example: LDA 1010 → 0000 1010 → enter 1111 0101.</p>
+      </div>
+      <div class="scroll"><table class="tbl" id="ld-tbl"></table></div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <p class="note"><b>Run mode:</b> address from the MAR, WE̅ = 1, and the controller pulls CS̅ low only in the read steps (T3, T5), so the RAM stays Hi-Z otherwise.</p>
+      <p class="note"><b>Load mode:</b> address from four switches SW1–SW4, data from the data switches, CS̅ = 0, and a push switch pulses WE̅ low to latch the word. The RUN/PROGRAM switch picks the address source.</p>
+    </div>
+  </section>
+
+  <section class="grid2" id="tables">
+    <div class="panel">
+      <div class="panel-head"><h2>Step counts</h2><span class="hint">useful steps; the ring still runs all 6</span></div>
+      <div class="scroll"><table><tr><th>Instr</th><th>Opcode</th><th class="c">Execute</th><th class="c">Fetch</th><th class="c">Total</th></tr>
+        <tr><td class="m">LDA</td><td class="m">0000</td><td class="c m">2</td><td class="c m">3</td><td class="c m">5</td></tr>
+        <tr><td class="m">ADD</td><td class="m">0001</td><td class="c m">3</td><td class="c m">3</td><td class="c m">6</td></tr>
+        <tr><td class="m">SUB</td><td class="m">0010</td><td class="c m">3</td><td class="c m">3</td><td class="c m">6</td></tr>
+        <tr><td class="m">OUT</td><td class="m">0011</td><td class="c m">1</td><td class="c m">3</td><td class="c m">4</td></tr>
+        <tr><td class="m">HLT</td><td class="m">1111</td><td class="c m">0</td><td class="c m">3</td><td class="c m">3</td></tr></table></div>
+      <p class="warnbox" style="margin-top:10px"><b>Two opcode lists in the notes.</b> The Week 7 page uses LDA 0011, ADD 0100, SUB 0101, OUT 0110, HLT 1111. The design pages use the list above. Only the decoder wiring changes; pick your lab manual's list and stay consistent.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Master table</h2><span class="hint">Chapter 9</span></div>
+      <div class="scroll"><table class="tbl"><tr><th></th><th>SAP-1</th><th>2-byte</th><th>2-byte, variable</th></tr>
+        <tr><td>Instruction bytes</td><td>1</td><td>2 (all)</td><td>1 or 2</td></tr>
+        <tr><td>Opcode / address bits</td><td>4 / 4</td><td>8 / 8</td><td>8 / 8 (none for 1-byte)</td></tr>
+        <tr><td>Memory</td><td>16 × 8</td><td>256 × 8</td><td>256 × 8</td></tr>
+        <tr><td>Instruction registers</td><td>IR</td><td>IRH, IRL</td><td>IRH, IRL</td></tr>
+        <tr><td>Ring counter</td><td>6</td><td>9</td><td>9 with skip</td></tr>
+        <tr><td>Length signal</td><td>—</td><td>—</td><td>LEN</td></tr>
+        <tr><td>Steps LDA/ADD/SUB</td><td>5/6/6</td><td>9/9/9</td><td>9/9/9</td></tr>
+        <tr><td>Steps OUT</td><td>4</td><td>9 (padded)</td><td>6</td></tr>
+        <tr><td>Steps HLT</td><td>3</td><td>7 (padded)</td><td>4</td></tr>
+        <tr><td>Fetch signals</td><td><span class="ov">CE</span>, <span class="ov">LI</span></td><td><span class="ov">CE</span>, <span class="ov">LIH</span> / <span class="ov">CE</span>, <span class="ov">LIL</span></td><td>same</td></tr>
+        <tr><td>Address-byte route</td><td>EI → <span class="ov">Lm</span></td><td>EIL → <span class="ov">Lm</span></td><td>same</td></tr></table></div>
+    </div>
+  </section>
+
+  <section class="grid2" id="mistakes">
+    <div class="panel">
+      <div class="panel-head"><h2>Common mistakes</h2></div>
+      <ul class="rev">
+        <li>Incrementing the PC in T1. The address goes to the MAR in T1; Cp is its own step T2.</li>
+        <li>Two senders on the W-bus in the same step. Their outputs fight.</li>
+        <li>Forgetting that <span class="ov">Lm</span>, <span class="ov">CE</span>, <span class="ov">LI</span>, <span class="ov">LA</span>, <span class="ov">LB</span>, <span class="ov">Lo</span> are active low, so a NOR, NAND or NOT sits in front of them.</li>
+        <li>Using Su = 1 for ADD. Su is 0 for ADD and 1 only in T6 of SUB.</li>
+        <li>Writing the true word into a 74LS189 and reading back its complement.</li>
+        <li>Decoding LEN from IRH in the variable-length machine. IRH loads at the end of T3, so LEN is read from the bus.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Quick revision</h2></div>
+      <ul class="rev">
+        <li>Controller–sequencer = instruction decoder + ring counter. Signal = OR of (step AND instruction).</li>
+        <li>Fetch: T1 Ep, <span class="ov">Lm</span> · T2 Cp · T3 <span class="ov">CE</span>, <span class="ov">LI</span>.</li>
+        <li>HLT stops the clock with one NOT and one AND on the clock line.</li>
+        <li>74LS173: load with G1G2 low, output with M, N low, clear with CLR high.</li>
+        <li>A − B = A + B̅ + 1: XOR with Su, Su into carry-in.</li>
+        <li>74LS189: 16 × 4, outputs complemented, WE̅ = 0 writes.</li>
+        <li>Modified SAP-1: 180 instructions → 8-bit opcode → 2-byte instruction, 256 bytes, 9 states.</li>
+        <li>n-byte: 3n fetch + 3 execute = 3n + 3 states.</li>
+        <li>Variable length: LEN = OUT + HLT; D4 = T3·LEN̅, D7 = T6 + T3·LEN; 6 or 9 steps.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" id="quiz">
+    <div class="panel-head"><h2>Quick quiz</h2><span class="pill" id="score">0 / 0</span></div>
+    <div class="quiz" id="qz"></div>
+  </section>
+
+  <footer>Built from the SAP-1 and Modified SAP-1 notes (Weeks 7–8). Pinouts follow the standard 74LS173 and 74LS189 datasheets.</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const C = v => v === null ? 'var(--muted)' : v ? 'var(--hi)' : 'var(--lo)';
+const b8 = v => (v & 255).toString(2).padStart(8, '0');
+const nib = s => s.slice(0, 4) + ' ' + s.slice(4);
+
+/* ---------- W-bus rule ---------- */
+const SND = [['Ep', 'PC', ['Lm']], ['EI', 'IR address', ['Lm']], ['CE', 'Memory', ['LI', 'LA', 'LB']], ['EA', 'Accumulator', ['Lo']], ['Eu', 'Adder/sub', ['LA']]];
+const RCV = [['Lm', 'MAR'], ['LI', 'IR'], ['LA', 'A'], ['LB', 'B'], ['Lo', 'Output']];
+const LOWS = new Set(['CE', 'Lm', 'LI', 'LA', 'LB', 'Lo']);
+const lbl = k => LOWS.has(k) ? `<span class="ov">${k}</span>` : k;
+const bus = { s: new Set(['Ep']), r: new Set(['Lm']) };
+function renderBus() {
+  $('snd').innerHTML = SND.map(([k, n]) => `<button data-s="${k}" aria-pressed="${bus.s.has(k)}">${lbl(k)} · ${n}</button>`).join('');
+  $('rcv').innerHTML = RCV.map(([k, n]) => `<button data-r="${k}" aria-pressed="${bus.r.has(k)}">${lbl(k)} · ${n}</button>`).join('');
+  const s = [...bus.s], r = [...bus.r]; let res, txt = '';
+  if (s.length > 1) { res = '<span class="pill bad">Bus conflict</span>'; txt = `${s.map(lbl).join(' and ')} drive the bus at the same time. Their tri-state outputs fight, and the byte is garbage.`; }
+  else if (!s.length) { res = r.length ? '<span class="pill warn">Nobody is sending</span>' : '<span class="pill">Idle step</span>'; txt = r.length ? 'A receiver loads a floating bus. Nothing useful arrives.' : 'No transfer this step (like LDA T6).'; }
+  else {
+    const ok = SND.find(x => x[0] === s[0])[2], bad = r.filter(x => !ok.includes(x));
+    if (!r.length) { res = '<span class="pill warn">No receiver</span>'; txt = 'The byte sits on the bus and is lost at the next step.'; }
+    else if (bad.length) { res = '<span class="pill bad">Not a valid pair</span>'; txt = `${SND.find(x => x[0] === s[0])[1]} never sends to ${bad.map(x => RCV.find(y => y[0] === x)[1]).join(', ')} in SAP-1.`; }
+    else {
+      res = '<span class="pill ok">Valid transfer</span>';
+      const steps = { 'Ep|Lm': 'T1 (fetch)', 'EI|Lm': 'T4 of LDA, ADD, SUB', 'CE|LI': 'T3 (fetch)', 'CE|LA': 'T5 of LDA', 'CE|LB': 'T5 of ADD, SUB', 'EA|Lo': 'T4 of OUT', 'Eu|LA': 'T6 of ADD, SUB' };
+      txt = r.map(x => `${SND.find(y => y[0] === s[0])[1]} → bus → ${RCV.find(y => y[0] === x)[1]}: happens in ${steps[s[0] + '|' + x]}`).join('<br>');
+    }
+  }
+  $('busres').innerHTML = res; $('bustxt').innerHTML = txt;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.s) { bus.s.has(b.dataset.s) ? bus.s.delete(b.dataset.s) : bus.s.add(b.dataset.s); renderBus(); }
+  if (b.dataset.r) { bus.r.has(b.dataset.r) ? bus.r.delete(b.dataset.r) : bus.r.add(b.dataset.r); renderBus(); }
+});
+
+/* ---------- ring + HLT ---------- */
+const ring = { k: 1, hlt: 0, hist: [] };
+function renderRing() {
+  $('ffs').innerHTML = Array.from({ length: 6 }, (_, i) => `<div class="${ring.k === i + 1 ? 'on' : ''}">T${i + 1}<br><small>FF${i + 1}</small></div>`).join('');
+  $('r-hlt').textContent = `HLT line = ${ring.hlt}`; $('r-hlt').setAttribute('aria-pressed', !!ring.hlt);
+  const nh = 1 - ring.hlt;
+  let s = '';
+  s += `<text x="4" y="26" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)">CLK</text><text x="4" y="86" font-family="IBM Plex Mono, monospace" font-size="11" fill="${ring.hlt ? 'var(--hi)' : 'var(--muted)'}">HLT=${ring.hlt}</text>`;
+  s += `<polyline points="40,22 170,22 170,34 196,34" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`;
+  s += `<polyline points="64,82 90,82" fill="none" stroke="${C(ring.hlt)}" stroke-width="2.2"/><path d="M90,73 L108,82 L90,91 Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><circle cx="112" cy="82" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`;
+  s += `<polyline points="116,82 170,82 170,54 196,54" fill="none" stroke="${C(nh)}" stroke-width="2.2"/><text x="122" y="76" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">HLT̅=${nh}</text>`;
+  s += `<path d="M196,26 h18 a18,18 0 0 1 0,36 h-18 z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`;
+  // gated output waveform
+  let p = `250,${nh ? 40 : 52}`; for (let i = 0; i < 5; i++) { const x = 250 + i * 32; p += nh ? ` ${x},52 ${x},30 ${x + 16},30 ${x + 16},52 ${x + 32},52` : ` ${x + 32},52`; }
+  s += `<polyline points="232,44 250,44" fill="none" stroke="${C(nh)}" stroke-width="2.2"/><polyline points="${p}" fill="none" stroke="${nh ? 'var(--hi)' : 'var(--lo)'}" stroke-width="2"/><text x="250" y="76" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">gated clock → ring counter</text>`;
+  // clock symbol
+  let q = '44,16'; for (let i = 0; i < 4; i++) { const x = 44 + i * 30; q += ` ${x},16 ${x},4 ${x + 15},4 ${x + 15},16 ${x + 30},16`; }
+  s += `<polyline points="${q}" fill="none" stroke="var(--muted)" stroke-width="1.2"/>`;
+  $('gate').innerHTML = s;
+  $('r-clk').disabled = !!ring.hlt;
+  $('r-clk').textContent = ring.hlt ? 'Clock blocked' : 'Clock pulse';
+}
+$('r-clk').onclick = () => { if (!ring.hlt) { ring.k = ring.k % 6 + 1; renderRing(); } };
+$('r-hlt').onclick = () => { ring.hlt = 1 - ring.hlt; renderRing(); };
+$('r-rst').onclick = () => { ring.k = 1; ring.hlt = 0; renderRing(); };
+
+/* ---------- tri-state ---------- */
+const tri = { type: 1, c: 1, i: 1 };
+function renderTri() {
+  $('t-type').textContent = tri.type ? 'bufif1' : 'bufif0'; $('t-type').setAttribute('aria-pressed', !tri.type);
+  $('t-c').textContent = `C = ${tri.c}`; $('t-i').textContent = `I = ${tri.i}`;
+  const conn = tri.type ? tri.c === 1 : tri.c === 0, o = conn ? tri.i : null;
+  let s = `<text x="10" y="58" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">I=${tri.i}</text>`;
+  s += `<polyline points="50,54 160,54" fill="none" stroke="${C(tri.i)}" stroke-width="2.4"/>`;
+  s += `<path d="M160,30 L210,54 L160,78 Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/>`;
+  if (!tri.type) s += `<circle cx="185" cy="${44 - 4}" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`;
+  s += `<polyline points="185,${tri.type ? 42 : 36} 185,10" fill="none" stroke="${C(tri.c)}" stroke-width="2.2"/><text x="192" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">C=${tri.c}</text>`;
+  s += conn ? `<polyline points="210,54 330,54" fill="none" stroke="${C(o)}" stroke-width="2.4"/>` : `<polyline points="210,54 250,54" fill="none" stroke="var(--lo)" stroke-width="2.4"/><polyline points="266,54 330,54" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 4"/><line x1="252" y1="44" x2="264" y2="64" stroke="var(--muted)" stroke-width="2"/>`;
+  s += `<text x="340" y="58" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="${conn ? 'var(--hi)' : 'var(--muted)'}">O=${conn ? o : 'Hi-Z'}</text>`;
+  $('trisvg').innerHTML = s;
+  $('tritxt').innerHTML = conn ? `Connected: the output copies I = <b>${tri.i}</b>.` : 'Disconnected: the output floats, so another register can drive this bus line.';
+}
+$('t-type').onclick = () => { tri.type = 1 - tri.type; renderTri(); };
+$('t-c').onclick = () => { tri.c = 1 - tri.c; renderTri(); };
+$('t-i').onclick = () => { tri.i = 1 - tri.i; renderTri(); };
+
+/* ---------- 74LS173 ---------- */
+const r173 = { m: 0, n: 0, g1: 0, g2: 0, clr: 0, d: 0b1010, q: 0, msg: 'Press the clock edge to load D.' };
+function render173() {
+  ['m', 'n', 'g1', 'g2', 'clr'].forEach(k => { const b = $('p-' + k); b.textContent = r173[k]; b.setAttribute('aria-pressed', !!r173[k]); });
+  $('p-d').innerHTML = [3, 2, 1, 0].map(i => `<button class="bit" data-d="${i}" aria-pressed="${!!(r173.d >> i & 1)}">${r173.d >> i & 1}</button>`).join(' ');
+  $('p-q').innerHTML = [3, 2, 1, 0].map(i => `<span class="${r173.q >> i & 1 ? 'one' : ''}">${r173.q >> i & 1}</span>`).join('');
+  const en = !r173.m && !r173.n;
+  $('p-o').innerHTML = [3, 2, 1, 0].map(i => en ? `<span class="${r173.q >> i & 1 ? 'one' : ''}">${r173.q >> i & 1}</span>` : `<span class="z">Hi-Z</span>`).join('');
+  $('p-msg').innerHTML = `<span class="pill ${en ? 'ok' : 'warn'}">${en ? 'outputs connected' : 'outputs Hi-Z'}</span><span class="pill">${r173.msg}</span>`;
+}
+['m', 'n', 'g1', 'g2'].forEach(k => $('p-' + k).onclick = () => { r173[k] ^= 1; render173(); });
+$('p-clr').onclick = () => { r173.clr ^= 1; if (r173.clr) { r173.q = 0; r173.msg = 'CLR high: cleared to 0000 (no clock needed)'; } else r173.msg = 'CLR released'; render173(); };
+$('p-clk').onclick = () => {
+  if (r173.clr) r173.msg = 'CLR is high, register held at 0000';
+  else if (r173.g1 || r173.g2) r173.msg = 'G1 or G2 high: hold, no change';
+  else { r173.q = r173.d; r173.msg = 'G1 = G2 = 0: loaded D on the rising edge'; }
+  render173();
+};
+$('p-d').onclick = e => { const b = e.target.closest('button'); if (b) { r173.d ^= 1 << +b.dataset.d; render173(); } };
+
+/* ---------- adder/subtractor ---------- */
+const as = { su: 1 };
+function renderAS() {
+  const clamp = v => Math.max(-128, Math.min(127, Math.round(+v || 0)));
+  const A = clamp($('as-a').value), B = clamp($('as-b').value), su = as.su;
+  $('as-ab').textContent = nib(b8(A)); $('as-bb').textContent = nib(b8(B));
+  $('as-su').textContent = su ? 'Su = 1 · subtract' : 'Su = 0 · add'; $('as-su').setAttribute('aria-pressed', !!su);
+  const bx = (B & 255) ^ (su ? 255 : 0), raw = (A & 255) + bx + su, sum = raw & 255, signed = sum > 127 ? sum - 256 : sum, exact = su ? A - B : A + B;
+  const ovf = exact !== signed;
+  $('as-out').innerHTML = `<div>B ⊕ Su &nbsp;= ${nib(b8(bx))}${su ? ' (inverted)' : ' (unchanged)'}</div><div>carry-in C0 = ${su}</div><div>A + (B⊕Su) + C0 = ${nib(b8(sum))}${raw > 255 ? ' (carry-out 1 dropped)' : ''}</div><div class="big">${signed} <span class="hint mono">= ${sum.toString(16).toUpperCase().padStart(2, '0')}H</span></div>${ovf ? `<div><span class="pill bad">Overflow: ${exact} is outside −128…127</span></div>` : ''}`;
+}
+$('as-a').oninput = $('as-b').oninput = renderAS;
+$('as-su').onclick = () => { as.su ^= 1; renderAS(); };
+
+/* ---------- 74LS189 loader ---------- */
+const OPC = { LDA: 0, ADD: 1, SUB: 2, OUT: 3, HLT: 15 };
+const mem = { cs: 0, we: 1 };
+function renderLd() {
+  const ins = $('ld-ins').value, v = Math.max(0, Math.min(ins === 'data' ? 255 : 15, Math.round(+$('ld-val').value || 0)));
+  $('ld-val').max = ins === 'data' ? 255 : 15; $('ld-val').disabled = ins === 'OUT' || ins === 'HLT';
+  const word = ins === 'data' ? v : (OPC[ins] << 4) | ((ins === 'OUT' || ins === 'HLT') ? 0 : v), comp = (~word) & 255;
+  $('ld-out').innerHTML = `<div>True word &nbsp;&nbsp;&nbsp;&nbsp;= <b>${nib(b8(word))}</b> (${word.toString(16).toUpperCase().padStart(2, '0')}H)</div><div>Enter on switches = <b>${nib(b8(comp))}</b></div><div>RAM output reads = ${nib(b8(word))} ✓</div>`;
+  $('m-cs').textContent = mem.cs; $('m-cs').setAttribute('aria-pressed', !!mem.cs);
+  $('m-we').textContent = mem.we; $('m-we').setAttribute('aria-pressed', !!mem.we);
+  $('m-mode').textContent = mem.cs ? 'inhibit: outputs Hi-Z' : mem.we ? 'read: outputs = complement of stored' : 'write: data stored, outputs Hi-Z';
+  const prog = [[0, 'LDA 1000', 0x08], [1, 'ADD 1001', 0x19], [2, 'OUT', 0x30], [3, 'HLT', 0xF0], [8, 'data 7', 7], [9, 'data 5', 5]];
+  $('ld-tbl').innerHTML = '<tr><th>Addr</th><th>Meaning</th><th>True word</th><th>Enter (complement)</th></tr>' + prog.map(([a, m, w]) => `<tr class="${w === word ? 'cur' : ''}"><td class="m">${a.toString(2).padStart(4, '0')}</td><td class="m">${m}</td><td class="m">${nib(b8(w))}</td><td class="m">${nib(b8(~w))}</td></tr>`).join('') + '<tr><td colspan="4" class="hint">Run it: 7 + 5 = 12 on the LEDs (0000 1100).</td></tr>';
+}
+$('ld-ins').onchange = $('ld-val').oninput = renderLd;
+$('m-cs').onclick = () => { mem.cs ^= 1; renderLd(); };
+$('m-we').onclick = () => { mem.we ^= 1; renderLd(); };
+
+/* ---------- quiz ---------- */
+const QZ = [
+  ['In which step does the PC increment?', ['T1', 'T2', 'T3'], 1, 'T1 copies the PC into the MAR; Cp is a separate step T2.'],
+  ['Which signals are on in T5 of ADD?', ['CE̅, LA̅', 'CE̅, LB̅', 'Eu, LA̅'], 1, 'The memory byte goes to B in T5; the sum goes to A in T6.'],
+  ['Su is 1 during…', ['T6 of ADD and SUB', 'T6 of SUB only', 'T5 of SUB'], 1, 'Su = T6·SUB. ADD needs Su = 0.'],
+  ['You want the 74LS189 to read back 0001 1001. What do you enter?', ['0001 1001', '1110 0110', '1001 0001'], 1, 'Outputs are complemented, so enter the complement.'],
+  ['How many states does a 3-byte machine need?', ['9', '12', '15'], 1, '3n + 3 = 3·3 + 3 = 12.'],
+  ['Why does the 3-byte machine need a 74LS157 selector?', ['To decode the opcode', 'The 16-bit address does not fit the 8-bit W-bus', 'To stop the clock'], 1, 'The MAR gets its own 16-line path: PC in fetch, IRM:IRL in execute.'],
+  ['In the variable-length machine, LEN is decoded from…', ['IRH during T4', 'the W-bus during T3', 'IRL during T6'], 1, 'The skip happens on the edge that loads IRH, so LEN reads the opcode on the bus.'],
+  ['D7 in the skip ring equals…', ['T6', 'T6 + T3·LEN', 'T3·LEN̅'], 1, 'Reach T7 from T6, or jump there from T3 when LEN = 1.'],
+  ['How many clock periods does OUT take with the skip (no early reset)?', ['4', '6', '9'], 1, 'T1 T2 T3 T7 T8 T9.'],
+  ['180 instructions need an opcode of…', ['7 bits', '8 bits', '9 bits'], 1, '2⁷ = 128 < 180 ≤ 2⁸ = 256.'],
+];
+const qs = { ans: {} };
+function renderQuiz() {
+  $('qz').innerHTML = QZ.map(([q, opts, right, why], i) => {
+    const a = qs.ans[i];
+    return `<div class="q"><b>${i + 1}. ${q}</b><div class="opts">${opts.map((o, j) => `<button data-q="${i}" data-o="${j}" class="${a === undefined ? '' : j === right ? 'right' : j === a ? 'wrong' : ''}">${o}</button>`).join('')}</div>${a !== undefined ? `<div class="why">${a === right ? 'Correct. ' : 'Not quite. '}${why}</div>` : ''}</div>`;
+  }).join('') + `<div class="row"><button id="qz-reset">Reset quiz</button></div>`;
+  const done = Object.keys(qs.ans).length, good = Object.entries(qs.ans).filter(([i, a]) => QZ[i][2] === a).length;
+  $('score').textContent = `${good} / ${done} correct`;
+  $('qz-reset').onclick = () => { qs.ans = {}; renderQuiz(); };
+}
+$('qz').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (b && qs.ans[b.dataset.q] === undefined) { qs.ans[b.dataset.q] = +b.dataset.o; renderQuiz(); } });
+
+renderBus(); renderRing(); renderTri(); render173(); renderAS(); renderLd(); renderQuiz();
+</script>
+</body></html>

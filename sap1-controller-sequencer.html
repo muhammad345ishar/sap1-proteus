@@ -1,0 +1,463 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SAP-1 Controller Sequencer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-bench console — control strip, live state row, gate cards grid, timing + microcode below */
+:root {
+  --bg: #e9edf1;
+  --surface: #ffffff;
+  --ink: #18212b;
+  --muted: #5a6877;
+  --line: #c8d1db;
+  --hi: #d9861a;       /* logic 1 / asserted */
+  --hi-soft: #fbe8cc;
+  --lo: #9aa7b5;       /* logic 0 / idle */
+  --accent: #2c5a86;
+  --accent-soft: #dce7f2;
+  --display: "Chakra Petch", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+    --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+  --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; line-height: 1.1; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+.eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 68ch; margin: 6px 0 0; }
+.ov { text-decoration: overline; text-decoration-thickness: 1.5px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* panels */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.hint { font-size: .8rem; color: var(--muted); }
+
+/* control strip */
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: flex-end; }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.group-label { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+button {
+  font-family: var(--mono); font-size: .85rem; font-weight: 500; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.bit { width: 40px; padding: 7px 0; text-align: center; }
+.bit[aria-pressed="true"] { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+
+/* state row */
+.state { display: grid; grid-template-columns: 1.1fr 1.4fr 1.5fr; gap: 16px; }
+@media (max-width: 900px) { .state { grid-template-columns: 1fr; } }
+.ring { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.tcell { border: 1px solid var(--line); border-radius: 6px; padding: 8px 0 6px; text-align: center; font-family: var(--mono); }
+.tcell b { display: block; font-size: 1rem; }
+.tcell small { font-size: .66rem; color: var(--muted); }
+.tcell.on { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+.tcell.on small { color: #4a3510; }
+.status { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: .85rem; }
+.pill { font-family: var(--mono); font-size: .75rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.pill.warn { background: var(--hi-soft); color: var(--hi); }
+
+.dec { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.ycell { border: 1px solid var(--line); border-radius: 5px; padding: 5px 0; text-align: center; font-family: var(--mono); font-size: .7rem; line-height: 1.25; }
+.ycell em { display: block; font-style: normal; font-size: .62rem; color: var(--muted); min-height: 1em; }
+.ycell.on { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+.ycell.on em { color: #4a3510; }
+.decin { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; font-family: var(--mono); font-size: .8rem; flex-wrap: wrap; }
+.decin span.b { display: inline-block; width: 24px; text-align: center; border-radius: 4px; padding: 2px 0; background: var(--accent-soft); color: var(--accent); }
+.decin span.b.one { background: var(--hi); color: #1a1205; }
+
+.cword { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
+.cbit { text-align: center; font-family: var(--mono); border-radius: 5px; padding: 6px 0 4px; border: 1px solid var(--line); }
+.cbit .nm { font-size: .64rem; color: var(--muted); display: block; }
+.cbit .lv { font-size: 1rem; font-weight: 600; }
+.cbit.act { background: var(--hi-soft); border-color: var(--hi); }
+.cbit.act .lv { color: var(--hi); }
+.hex { margin-top: 12px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+.hex .big { font-family: var(--display); font-size: 2rem; font-weight: 700; letter-spacing: .04em; }
+.regs { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+.regs b { color: var(--ink); font-weight: 600; }
+
+/* gate cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 12px 10px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; min-width: 0; transition: border-color .2s; }
+.card.act { border-color: var(--hi); box-shadow: inset 3px 0 0 var(--hi); }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card-name { font-family: var(--display); font-size: 1.25rem; font-weight: 600; }
+.card-role { font-size: .78rem; color: var(--muted); }
+.led { font-family: var(--mono); font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); white-space: nowrap; }
+.card.act .led { background: var(--hi); color: #1a1205; }
+.card svg { width: 100%; height: auto; display: block; }
+.eq { font-family: var(--mono); font-size: .76rem; color: var(--muted); overflow-wrap: anywhere; }
+
+/* timing + table */
+.scroll { overflow-x: auto; }
+.timing svg { display: block; min-width: 560px; width: 100%; height: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: .82rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 8px; text-align: left; vertical-align: top; }
+th { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td.op { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+td .sig { display: inline-block; font-family: var(--mono); font-size: .74rem; margin: 0 4px 2px 0; padding: 1px 6px; border-radius: 4px; background: var(--bg); }
+tr.cur td { background: var(--accent-soft); }
+td.here { outline: 2px solid var(--hi); outline-offset: -2px; }
+.empty { color: var(--lo); }
+
+.bog { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.bog div { border-left: 2px solid var(--line); padding: 2px 0 2px 10px; }
+.bog b { font-family: var(--display); font-size: 1.5rem; display: block; line-height: 1.1; }
+.bog span { font-size: .78rem; color: var(--muted); }
+footer { font-size: .78rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Malvino SAP-1 · hard-wired control</div>
+    <h1>SAP-1 Controller Sequencer</h1>
+    <p class="lede">A 4-to-16 decoder turns the opcode into LDA, ADD, SUB, OUT and HLT lines, and the step counter gives T1–T6. An AND–OR–NOT matrix then produces the 12 control signals. Step the clock and watch each gate light up.</p>
+  </header>
+
+  <section class="panel" aria-label="Controls">
+    <div class="controls">
+      <div class="group">
+        <span class="group-label">Mode</span>
+        <div class="row">
+          <button id="m-manual" aria-pressed="true">Pick opcode</button>
+          <button id="m-prog" aria-pressed="false">Run test program</button>
+        </div>
+      </div>
+      <div class="group" id="op-group">
+        <span class="group-label">Instruction (IR high nibble)</span>
+        <div class="row" id="op-btns"></div>
+      </div>
+      <div class="group" id="bit-group">
+        <span class="group-label">I7 I6 I5 I4</span>
+        <div class="row" id="bits"></div>
+      </div>
+      <div class="group">
+        <span class="group-label">Clock</span>
+        <div class="row">
+          <button id="b-step" class="primary">Step ▸</button>
+          <button id="b-run" aria-pressed="false">Run</button>
+          <button id="b-reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="state">
+    <div class="panel">
+      <div class="panel-head"><h2>Ring counter</h2><span class="hint">74LS161 → 74154</span></div>
+      <div class="ring" id="ring"></div>
+      <div class="status" id="status"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Instruction decoder</h2><span class="hint">74154, outputs active-low</span></div>
+      <div class="decin" id="decin"></div>
+      <div class="dec" id="dec"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Control word</h2><span class="hint">pin levels, Malvino order</span></div>
+      <div class="cword" id="cword"></div>
+      <div class="hex">
+        <div><div class="group-label">CON</div><div class="big mono" id="hexw">5E3H</div></div>
+        <div class="regs" id="regs"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Control matrix</h2><span class="hint">amber = logic 1 on that wire · bubble = active-low output</span></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="panel timing">
+    <div class="panel-head"><h2>Timing diagram</h2><span class="hint" id="tim-hint"></span></div>
+    <div class="scroll"><svg id="timing" role="img" aria-label="Control signal waveforms across T1 to T6"></svg></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Microcode table</h2><span class="hint">asserted signals per T-state</span></div>
+    <div class="scroll"><table id="micro"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Gate count</h2><span class="hint">AND–OR–NOT version, shared product terms</span></div>
+    <div class="bog" id="bog"></div>
+    <p class="hint" style="margin:12px 0 0">The 74154 outputs are active-low, so T1–T6 and LDA/ADD/SUB/OUT pass through inverters (74LS04) first. L̄I takes T̄3 straight from the decoder with no gate. With NAND only, the same logic needs 28 gates (7× 74LS00).</p>
+  </section>
+
+  <footer>Opcodes: LDA 0000 · ADD 0001 · SUB 0010 · OUT 1110 · HLT 1111. Test program: LDA 9H, ADD AH, ADD BH, SUB CH, OUT, HLT with 16, 20, 24, 32 in RAM, so OUT = 28 (1CH).</footer>
+</div>
+
+<script>
+const OPS = { 0: 'LDA', 1: 'ADD', 2: 'SUB', 14: 'OUT', 15: 'HLT' };
+const OP_LIST = [0, 1, 2, 14, 15];
+// Control signals in Malvino's CON order. low = active-low pin. terms = sum of products.
+const SIGS = [
+  { k: 'Cp', role: 'Increment PC', low: false, terms: [['T2']] },
+  { k: 'Ep', role: 'PC → W bus', low: false, terms: [['T1']] },
+  { k: 'LM', role: 'Load MAR', low: true, terms: [['T1'], ['T4', 'LDA'], ['T4', 'ADD'], ['T4', 'SUB']] },
+  { k: 'CE', role: 'RAM → W bus', low: true, terms: [['T3'], ['T5', 'LDA'], ['T5', 'ADD'], ['T5', 'SUB']] },
+  { k: 'LI', role: 'Load IR', low: true, terms: [['T3']] },
+  { k: 'EI', role: 'IR operand → W bus', low: true, terms: [['T4', 'LDA'], ['T4', 'ADD'], ['T4', 'SUB']] },
+  { k: 'LA', role: 'Load accumulator', low: true, terms: [['T5', 'LDA'], ['T6', 'ADD'], ['T6', 'SUB']] },
+  { k: 'EA', role: 'Accumulator → W bus', low: false, terms: [['T4', 'OUT']] },
+  { k: 'Su', role: 'Subtract mode', low: false, terms: [['T6', 'SUB']] },
+  { k: 'EU', role: 'Adder → W bus', low: false, terms: [['T6', 'ADD'], ['T6', 'SUB']] },
+  { k: 'LB', role: 'Load B', low: true, terms: [['T5', 'ADD'], ['T5', 'SUB']] },
+  { k: 'LO', role: 'Load output', low: true, terms: [['T4', 'OUT']] },
+];
+const PROGRAM = [
+  { op: 0, arg: 9, txt: 'LDA 9H' }, { op: 1, arg: 10, txt: 'ADD AH' }, { op: 1, arg: 11, txt: 'ADD BH' },
+  { op: 2, arg: 12, txt: 'SUB CH' }, { op: 14, arg: 0, txt: 'OUT' }, { op: 15, arg: 0, txt: 'HLT' },
+];
+const RAM = { 9: 16, 10: 20, 11: 24, 12: 32 };
+
+const st = { t: 1, op: 0, mode: 'manual', pc: 0, ir: null, A: 0, B: 0, OUT: null, halted: false, timer: null };
+
+const $ = id => document.getElementById(id);
+const name = s => s.low ? `<span class="ov">${s.k}</span>` : s.k;
+
+function inputs(t, op) {
+  const v = {};
+  for (let i = 1; i <= 6; i++) v['T' + i] = t === i;
+  v.LDA = op === 0; v.ADD = op === 1; v.SUB = op === 2; v.OUT = op === 14; v.HLT = op === 15;
+  return v;
+}
+function evalSig(s, inp) {
+  const tv = s.terms.map(tm => tm.every(x => inp[x]));
+  const asserted = tv.some(Boolean);
+  return { tv, asserted, level: s.low ? !asserted : asserted };
+}
+function curOp() { return st.mode === 'manual' ? st.op : (st.ir ? st.ir.op : 0); }
+
+/* ---------- gate drawing ---------- */
+const C = v => v ? 'var(--hi)' : 'var(--lo)';
+function andG(x, y, h) { const w = 16; return `<path d="M${x},${y - h / 2} h${w} a${h / 2},${h / 2} 0 0 1 0,${h} h${-w} z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`; }
+function orG(x0, cy, h, w) { const y0 = cy - h / 2; return `<path d="M${x0},${y0} Q${x0 + w * .35},${cy} ${x0},${y0 + h} Q${x0 + w * .62},${y0 + h} ${x0 + w},${cy} Q${x0 + w * .62},${y0} ${x0},${y0} Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`; }
+function notG(x, y) { return `<path d="M${x},${y - 10} L${x + 20},${y} L${x},${y + 10} Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`; }
+function bub(x, y) { return `<circle cx="${x}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`; }
+function wire(pts, v) { return `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${C(v)}" stroke-width="2.2" stroke-linejoin="round"/>`; }
+function lab(x, y, t, v) { return `<text x="${x}" y="${y + 3.5}" font-family="IBM Plex Mono, monospace" font-size="10" fill="${v ? 'var(--hi)' : 'var(--muted)'}" font-weight="${v ? 600 : 400}">${t}</text>`; }
+
+function gateSVG(s, inp, r) {
+  const n = s.terms.length, rowH = 32;
+  const H = Math.max(n * rowH + 8, 52);
+  let g = '', top = '';
+  const outV = r.level;
+  if (n === 1) {
+    const tm = s.terms[0], y = H / 2;
+    if (tm.length === 2) {
+      g += lab(4, y - 7, tm[0], inp[tm[0]]) + lab(4, y + 7, tm[1], inp[tm[1]]);
+      g += wire([[34, y - 7], [118, y - 7]], inp[tm[0]]) + wire([[34, y + 7], [118, y + 7]], inp[tm[1]]);
+      top += andG(118, y, 26);
+      let ox = 147;
+      if (s.low) { top += bub(151, y); ox = 155; }
+      g += wire([[ox, y], [236, y]], outV);
+    } else {
+      const v = inp[tm[0]];
+      g += lab(4, y, tm[0], v) + wire([[34, y], [s.low ? 118 : 236, y]], v);
+      if (s.low) { top += notG(118, y) + bub(142, y); g += wire([[146, y], [236, y]], outV); }
+    }
+  } else {
+    const cy = H / 2, oh = (n - 1) * 10 + 20, ox0 = 172, ow = 34;
+    s.terms.forEach((tm, i) => {
+      const y = 4 + rowH * i + rowH / 2, tv = r.tv[i];
+      if (tm.length === 2) {
+        g += lab(4, y - 7, tm[0], inp[tm[0]]) + lab(4, y + 7, tm[1], inp[tm[1]]);
+        g += wire([[34, y - 7], [96, y - 7]], inp[tm[0]]) + wire([[34, y + 7], [96, y + 7]], inp[tm[1]]);
+        top += andG(96, y, 24);
+      } else {
+        g += lab(4, y, tm[0], inp[tm[0]]) + wire([[34, y], [124, y]], tv);
+      }
+      const py = cy - (n - 1) * 5 + i * 10, ex = 134 + i * 7;
+      g += wire([[124, y], [ex, y], [ex, py], [ox0 + 8, py]], tv);
+    });
+    top += orG(ox0, cy, oh, ow);
+    let ox = ox0 + ow;
+    if (s.low) { top += bub(ox + 4, cy); ox += 8; }
+    g += wire([[ox, cy], [236, cy]], outV);
+  }
+  const y = H / 2;
+  const out = `<circle cx="240" cy="${y}" r="5" fill="${C(outV)}"/>` + lab(250, y, outV ? '1' : '0', outV);
+  return `<svg viewBox="0 0 268 ${H}" role="img" aria-label="Gate diagram for ${s.k}">${g}${top}${out}</svg>`;
+}
+function eqText(s) {
+  const sum = s.terms.map(t => t.join('·')).join(' + ');
+  const lhs = s.low ? `<span class="ov">${s.k}</span>` : s.k;
+  return `${lhs} = ${s.low ? '(' + sum + ')′' : sum}`;
+}
+
+/* ---------- render ---------- */
+function render() {
+  const op = curOp(), inp = inputs(st.t, op);
+  const res = SIGS.map(s => evalSig(s, inp));
+
+  // mode + opcode controls
+  $('m-manual').setAttribute('aria-pressed', st.mode === 'manual');
+  $('m-prog').setAttribute('aria-pressed', st.mode === 'prog');
+  $('op-btns').innerHTML = OP_LIST.map(o => `<button data-op="${o}" aria-pressed="${op === o}" ${st.mode === 'prog' ? 'disabled' : ''}>${OPS[o]}</button>`).join('');
+  $('bits').innerHTML = [3, 2, 1, 0].map(b => `<button class="bit" data-bit="${b}" aria-pressed="${!!(op >> b & 1)}" ${st.mode === 'prog' ? 'disabled' : ''} aria-label="I${b + 4}">${op >> b & 1}</button>`).join('');
+
+  // ring
+  const tNames = ['Addr', 'Inc', 'Mem', 'Ex 1', 'Ex 2', 'Ex 3'];
+  $('ring').innerHTML = tNames.map((nm, i) => `<div class="tcell ${st.t === i + 1 ? 'on' : ''}"><b>T${i + 1}</b><small>${nm}</small></div>`).join('');
+  let stat = `<span class="pill">${st.t <= 3 ? 'Fetch cycle' : 'Execute cycle'}</span>`;
+  if (st.mode === 'prog') stat += `<span class="pill">PC = ${st.pc}</span><span class="pill">IR = ${st.ir ? st.ir.txt : '—'}</span>`;
+  if (st.halted) stat += `<span class="pill warn">HLT · clock stopped</span>`;
+  $('status').innerHTML = stat;
+
+  // decoder
+  $('decin').innerHTML = 'I7–I4 →' + [3, 2, 1, 0].map(b => `<span class="b ${op >> b & 1 ? 'one' : ''}">${op >> b & 1}</span>`).join('') + `<span style="color:var(--muted)">= ${op}</span>`;
+  $('dec').innerHTML = Array.from({ length: 16 }, (_, i) => `<div class="ycell ${i === op ? 'on' : ''}">Y${i}<em>${OPS[i] || ''}</em></div>`).join('');
+
+  // control word
+  let bits = '';
+  $('cword').innerHTML = SIGS.map((s, i) => {
+    bits += res[i].level ? '1' : '0';
+    return `<div class="cbit ${res[i].asserted ? 'act' : ''}"><span class="nm">${name(s)}</span><span class="lv">${res[i].level ? 1 : 0}</span></div>`;
+  }).join('');
+  $('hexw').textContent = parseInt(bits, 2).toString(16).toUpperCase().padStart(3, '0') + 'H';
+  $('regs').innerHTML = st.mode === 'prog'
+    ? `<span>A <b>${st.A}</b></span><span>B <b>${st.B}</b></span><span>OUT <b>${st.OUT === null ? '—' : st.OUT + ' (' + st.OUT.toString(16).toUpperCase() + 'H)'}</b></span>`
+    : `<span>${OPS[op] ? OPS[op] + ' · ' : 'Unused opcode · '}T${st.t}</span>`;
+
+  // cards
+  $('cards').innerHTML = SIGS.map((s, i) => `
+    <article class="card ${res[i].asserted ? 'act' : ''}">
+      <div class="card-top"><div><div class="card-name">${name(s)}</div><div class="card-role">${s.role}</div></div>
+      <span class="led">${res[i].asserted ? 'active' : 'idle'} · pin ${res[i].level ? 1 : 0}</span></div>
+      ${gateSVG(s, inp, res[i])}
+      <div class="eq">${eqText(s)}</div>
+    </article>`).join('');
+
+  renderTiming(op);
+  renderMicro(op);
+  $('b-run').setAttribute('aria-pressed', !!st.timer);
+  $('b-run').textContent = st.timer ? 'Pause' : 'Run';
+  $('b-step').disabled = st.halted;
+  $('b-run').disabled = st.halted;
+}
+
+function renderTiming(op) {
+  const L = 64, cw = 88, rh = 24, top = 26, W = L + cw * 6 + 8, H = top + rh * SIGS.length + 6;
+  let s = `<rect x="${L + (st.t - 1) * cw}" y="0" width="${cw}" height="${H}" fill="var(--hi-soft)"/>`;
+  for (let t = 1; t <= 6; t++) {
+    s += `<text x="${L + (t - 1) * cw + cw / 2}" y="16" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="${t === st.t ? 'var(--hi)' : 'var(--muted)'}" font-weight="600">T${t}</text>`;
+    s += `<line x1="${L + (t - 1) * cw}" y1="${top - 4}" x2="${L + (t - 1) * cw}" y2="${H}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
+  }
+  SIGS.forEach((sg, i) => {
+    const y0 = top + i * rh, hiY = y0 + 5, loY = y0 + rh - 5;
+    s += `<text x="4" y="${y0 + rh / 2 + 4}" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)" ${sg.low ? 'text-decoration="overline"' : ''}>${sg.k}</text>`;
+    let pts = [], prev = null;
+    for (let t = 1; t <= 6; t++) {
+      const r = evalSig(sg, inputs(t, op)), y = r.level ? hiY : loY, x = L + (t - 1) * cw;
+      if (prev !== null && prev !== y) pts.push([x, prev]);
+      pts.push([x, y], [x + cw, y]); prev = y;
+      if (r.asserted) s += `<rect x="${x + 1}" y="${hiY - 2}" width="${cw - 2}" height="${loY - hiY + 4}" fill="var(--hi)" opacity=".14"/>`;
+    }
+    s += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.8"/>`;
+  });
+  const svg = $('timing');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = s;
+  $('tim-hint').textContent = `${OPS[op] || 'opcode ' + op} · shaded = signal asserted`;
+}
+
+function renderMicro(op) {
+  let h = '<tr><th>Opcode</th>' + [1, 2, 3, 4, 5, 6].map(t => `<th>T${t}</th>`).join('') + '</tr>';
+  for (const o of OP_LIST) {
+    h += `<tr class="${o === op ? 'cur' : ''}"><td class="op">${OPS[o]} <span style="color:var(--muted);font-weight:400">${o.toString(2).padStart(4, '0')}</span></td>`;
+    for (let t = 1; t <= 6; t++) {
+      const inp = inputs(t, o);
+      const act = SIGS.filter(s => evalSig(s, inp).asserted);
+      h += `<td class="${o === op && t === st.t ? 'here' : ''}">${act.length ? act.map(s => `<span class="sig">${name(s)}</span>`).join('') : '<span class="empty">—</span>'}</td>`;
+    }
+    h += '</tr>';
+  }
+  $('micro').innerHTML = h;
+}
+
+function renderBog() {
+  const terms = new Set(); let ors = {}, inv = 0;
+  SIGS.forEach(s => {
+    s.terms.forEach(t => { if (t.length > 1) terms.add(t.join('·')); });
+    if (s.terms.length > 1) { const k = (s.low ? 'NOR' : 'OR') + s.terms.length; ors[k] = (ors[k] || 0) + 1; }
+    else if (s.low && s.terms[0].length === 1) inv++;
+  });
+  const orTxt = Object.entries(ors).map(([k, v]) => `${v}× ${k.replace(/(\d)/, '-$1')}`).join(', ');
+  $('bog').innerHTML = `
+    <div><b>2</b><span>74154 decoders (opcode, T-state)</span></div>
+    <div><b>${terms.size}</b><span>2-input AND product terms, shared (3× 74LS08)</span></div>
+    <div><b>${Object.values(ors).reduce((a, b) => a + b, 0)}</b><span>OR / NOR gates: ${orTxt}</span></div>
+    <div><b>10</b><span>inverters on decoder outputs (2× 74LS04)</span></div>
+    <div><b>12</b><span>control signals out</span></div>`;
+}
+
+/* ---------- behaviour ---------- */
+function clockEdge() {
+  if (st.halted) return;
+  const op = curOp(), inp = inputs(st.t, op), r = {};
+  SIGS.forEach(s => r[s.k] = evalSig(s, inp).asserted);
+  if (st.mode === 'prog') {
+    if (r.Cp) st.pc = Math.min(st.pc + 1, 15);
+    if (r.LI) st.ir = PROGRAM[st.pc - 1] || PROGRAM[PROGRAM.length - 1];
+    const arg = st.ir ? st.ir.arg : 0;
+    if (r.LA && st.t === 5) st.A = RAM[arg] ?? 0;
+    if (r.LB) st.B = RAM[arg] ?? 0;
+    if (r.LA && r.EU) st.A = (r.Su ? st.A - st.B : st.A + st.B) & 255;
+    if (r.LO) st.OUT = st.A;
+  }
+  st.t = st.t % 6 + 1;
+  if (curOp() === 15 && st.t === 4) { st.halted = true; stopRun(); }
+}
+function stopRun() { if (st.timer) { clearInterval(st.timer); st.timer = null; } }
+function reset() { stopRun(); Object.assign(st, { t: 1, pc: 0, ir: null, A: 0, B: 0, OUT: null, halted: false }); render(); }
+
+$('b-step').onclick = () => { clockEdge(); render(); };
+$('b-run').onclick = () => {
+  if (st.timer) { stopRun(); render(); return; }
+  st.timer = setInterval(() => { clockEdge(); render(); }, 650);
+  render();
+};
+$('b-reset').onclick = reset;
+$('m-manual').onclick = () => { st.mode = 'manual'; reset(); };
+$('m-prog').onclick = () => { st.mode = 'prog'; reset(); };
+document.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.disabled) return;
+  if (b.dataset.op !== undefined) { st.op = +b.dataset.op; st.halted = false; render(); }
+  if (b.dataset.bit !== undefined) { st.op ^= 1 << +b.dataset.bit; st.halted = false; render(); }
+});
+
+renderBog();
+render();
+</script>
+
+</body></html>

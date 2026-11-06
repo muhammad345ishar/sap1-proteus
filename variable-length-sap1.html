@@ -1,0 +1,448 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Variable-Length SAP-1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-bench console (SAP-1 series) — opcode bench, live ring + gates, state diagram, timing, comparison, Verilog */
+:root {
+  --bg: #e9edf1; --surface: #ffffff; --ink: #18212b; --muted: #5a6877; --line: #c8d1db;
+  --hi: #d9861a; --hi-soft: #fbe8cc; --lo: #9aa7b5;
+  --accent: #2c5a86; --accent-soft: #dce7f2;
+  --ad: #1f7a6d; --ad-soft: #d5ece8;
+  --display: "Chakra Petch", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+    --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+    --ad: #5cc4b3; --ad-soft: #12312c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+  --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+  --ad: #5cc4b3; --ad-soft: #12312c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; line-height: 1.1; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 70ch; margin-top: 6px; }
+.ov { text-decoration: overline; text-decoration-thickness: 1.5px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.hint { font-size: .8rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid2 > * { min-width: 0; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: flex-end; }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.group-label { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+button {
+  font-family: var(--mono); font-size: .85rem; font-weight: 500; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.bit { width: 34px; padding: 7px 0; text-align: center; }
+.bit[aria-pressed="true"] { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+
+.ring { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; min-width: 520px; }
+.ff { border: 1px solid var(--line); border-radius: 6px; padding: 6px 0 5px; text-align: center; font-family: var(--mono); }
+.ff b { display: block; font-size: .95rem; }
+.ff small { display: block; font-size: .62rem; color: var(--muted); line-height: 1.3; }
+.ff.on { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+.ff.on small { color: #4a3510; }
+.ff.next { border-color: var(--ad); box-shadow: inset 0 -3px 0 var(--ad); }
+.ff.skip { background: repeating-linear-gradient(135deg, transparent 0 5px, var(--line) 5px 6px); color: var(--muted); }
+.ff.mod small.d { color: var(--ad); font-weight: 600; }
+.scroll { overflow-x: auto; }
+.status { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pill { font-family: var(--mono); font-size: .75rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.pill.warn { background: var(--hi-soft); color: var(--hi); }
+.pill.ad { background: var(--ad-soft); color: var(--ad); }
+.gate svg, .diag svg { width: 100%; height: auto; display: block; }
+.timing svg { display: block; min-width: 760px; width: 100%; height: auto; }
+.eq { font-family: var(--mono); font-size: .85rem; display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.eq span.v { color: var(--hi); font-weight: 600; }
+table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+th { font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td.m { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.c, th.c { text-align: center; }
+tr.cur td { background: var(--hi-soft); }
+.tbl { min-width: 560px; }
+.note { font-size: .84rem; color: var(--muted); border-left: 3px solid var(--ad); padding: 4px 0 4px 10px; max-width: 80ch; }
+.note b { color: var(--ink); }
+pre { font-family: var(--mono); font-size: .78rem; line-height: 1.55; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 0; overflow-x: auto; }
+pre .c { color: var(--muted); }
+pre .k { color: var(--accent); font-weight: 600; }
+.ext { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.ext div { border-left: 2px solid var(--line); padding: 2px 0 2px 12px; display: flex; flex-direction: column; gap: 4px; }
+.ext b { font-family: var(--display); font-size: 1rem; }
+.ext code { font-family: var(--mono); font-size: .8rem; color: var(--ad); }
+.ext span { font-size: .82rem; color: var(--muted); }
+footer { font-size: .78rem; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DLD · Chapter 8 · variable-length control</div>
+    <h1>Variable-Length SAP-1</h1>
+    <p class="lede">In the 2-byte machine, OUT and HLT have no address byte, so fetching one wastes a memory byte and three clocks. The length signal LEN tells the 9-bit ring counter to jump from T3 straight to T7. One-byte instructions run 6 steps, two-byte instructions run 9, and not a single control equation changes.</p>
+  </header>
+
+  <section class="panel" aria-label="Controls">
+    <div class="controls">
+      <div class="group">
+        <span class="group-label">Mode</span>
+        <div class="row">
+          <button id="m-prog" aria-pressed="true">Run example program</button>
+          <button id="m-man" aria-pressed="false">Pick opcode</button>
+        </div>
+      </div>
+      <div class="group" id="g-op">
+        <span class="group-label">Opcode byte on the bus in T3</span>
+        <div class="row" id="ops"></div>
+      </div>
+      <div class="group" id="g-bits">
+        <span class="group-label">O7 … O0</span>
+        <div class="row" id="bits"></div>
+      </div>
+      <div class="group">
+        <span class="group-label">Clock</span>
+        <div class="row">
+          <button id="b-step" class="primary">Step ▸</button>
+          <button id="b-run" aria-pressed="false">Run</button>
+          <button id="b-reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>9-bit ring counter with skip</h2><span class="hint">Q = current state · D = what each flip-flop loads at the next edge · green edge = next state</span></div>
+    <div class="scroll"><div class="ring" id="ring"></div></div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel gate">
+      <div class="panel-head"><h2>LEN decoder</h2><span class="hint">inputs taken from the W-bus during T3</span></div>
+      <svg id="lensvg" viewBox="0 0 420 190" role="img" aria-label="LEN = OUT + HLT gate circuit"></svg>
+      <div class="eq" id="leneq"></div>
+    </div>
+    <div class="panel gate">
+      <div class="panel-head"><h2>Skip logic</h2><span class="hint">one NOT, two AND, one OR added to the ring</span></div>
+      <svg id="skipsvg" viewBox="0 0 420 190" role="img" aria-label="D4 and D7 skip gates"></svg>
+      <div class="eq" id="skipeq"></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel diag">
+      <div class="panel-head"><h2>State diagram</h2><span class="hint">amber = now · blue = visited this instruction</span></div>
+      <svg id="state" viewBox="0 0 420 330" role="img" aria-label="Nine-state ring with skip arc from T3 to T7"></svg>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Why LEN comes from the bus</h2></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <p class="note">The skip is decided <b>at the end of T3</b>, on the same clock edge that loads the opcode into IRH. IRH is still holding the <i>previous</i> opcode during T3, so LEN cannot be decoded from it. During T3 the memory is driving the opcode onto the W-bus (CE̅ is on), so the LEN gates read the bus.</p>
+        <p class="note">After that edge the normal 8-bit decoder works from IRH, exactly as in the padded design. An alternative is one wait state after T3 and decoding from IRH, but that breaks the 6-step and 9-step counts.</p>
+        <p class="note"><b>Control equations stay the same.</b> Ep = T1 + T4, Cp = T2 + T5, CE̅ = T3 + T6 + T8·MEM and the rest are unchanged. The ring simply never visits T4, T5, T6 for a one-byte instruction, so those terms are never true. LEN is used by the ring counter alone.</p>
+        <p class="note"><b>Cheaper encoding:</b> if there are many short instructions, reserve one opcode bit as the length bit. Then LEN is that bit itself, with no decoding gates at all.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Truth table of LEN</h2><span class="hint">highlighted row = opcode in the current instruction</span></div>
+    <div class="scroll"><table class="tbl" id="lentbl"></table></div>
+  </section>
+
+  <section class="panel timing">
+    <div class="panel-head"><h2>Timing diagram</h2><span class="hint">the test bench sequence: one 2-byte instruction (ADD), one 1-byte instruction (OUT), then the next fetch</span></div>
+    <div class="scroll"><svg id="timing" role="img" aria-label="Waveforms of CLK and T1 to T9"></svg></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h2>Padded vs variable length</h2><span class="hint">example program, both end with 11 on the LEDs</span></div>
+      <div class="scroll"><table id="cmp"></table></div>
+      <p class="hint" style="margin-top:10px">Program: LDA 10, ADD 11, SUB 12, OUT, HLT with data 9, 5, 3. Padded, OUT and HLT carry a dummy 00 byte (addresses 00–09); with the skip the program is 8 bytes (00–07).</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Extending the idea</h2></div>
+      <div class="ext">
+        <div><b>3-byte machine</b><code>D4 = T3·LEN̅<br>D10 = T9 + T3·LEN</code><span>Jump from the end of the opcode byte to the first execute step T10.</span></div>
+        <div><b>4-byte machine</b><code>D4 = T3·LEN̅<br>D13 = T12 + T3·LEN</code><span>Same pattern: skip lands on T3n+1.</span></div>
+        <div><b>More than two lengths</b><code>LEN1 LEN0</code><span>Two length bits and a skip after each byte: after T3 jump if 1 byte, after T6 jump if 2 bytes, and so on.</span></div>
+        <div><b>Early reset</b><code>D1 = T9 + T8·LDA + T7·OUT</code><span>Returns the ring to T1 as soon as the instruction is done. With the skip, OUT drops from 6 steps to 4. Not used here because the spec asks for 6 and 9.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Verilog model</h2><div class="row"><span class="hint" id="copied"></span><button id="b-copy">Copy code</button></div></div>
+    <pre id="vlog"></pre>
+    <p class="hint" style="margin-top:10px">Expected sequence: T1 T2 T3 T4 T5 T6 T7 T8 T9 · T1 T2 T3 T7 T8 T9 · T1 T2 T3 … The notes were written without a simulator, so run it in yours (Icarus, ModelSim) before submitting.</p>
+  </section>
+
+  <footer>Opcodes of the 2-byte machine: LDA 00, ADD 01, SUB 02, OUT 03, HLT FF. LEN = 1 means one byte (OUT, HLT); LEN = 0 means two bytes (LDA, ADD, SUB).</footer>
+</div>
+
+<script>
+const OPS = { 0: 'LDA', 1: 'ADD', 2: 'SUB', 3: 'OUT', 255: 'HLT' };
+const OPL = [0, 1, 2, 3, 255];
+const PROG = [0, 1, 2, 3, 255];
+const ROLE = ['PC→MAR', 'PC+1', 'op→IRH', 'PC→MAR', 'PC+1', 'adr→IRL', 'exec 1', 'exec 2', 'exec 3'];
+const st = { mode: 'prog', op: 3, k: 1, pc: 0, path: [1], halted: false, timer: null, log: [] };
+const $ = id => document.getElementById(id);
+const C = v => v ? 'var(--hi)' : 'var(--lo)';
+const bin = v => v.toString(2).padStart(8, '0');
+
+function curOp() { return st.mode === 'prog' ? PROG[Math.min(st.pc, PROG.length - 1)] : st.op; }
+const isOUT = o => o === 3, isHLT = o => o === 255;
+const lenOf = o => (isOUT(o) || isHLT(o)) ? 1 : 0;
+function nextState(k, len) {
+  const T = i => k === i ? 1 : 0;
+  const D = Array(10).fill(0);
+  D[1] = T(9); D[2] = T(1); D[3] = T(2); D[4] = T(3) & (1 - len); D[5] = T(4); D[6] = T(5);
+  D[7] = T(6) | (T(3) & len); D[8] = T(7); D[9] = T(8);
+  return D;
+}
+
+/* ---------- gates ---------- */
+const andG = (x, y, h) => `<path d="M${x},${y - h / 2} h18 a${h / 2},${h / 2} 0 0 1 0,${h} h-18 z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`;
+const orG = (x, cy, h, w) => { const y0 = cy - h / 2; return `<path d="M${x},${y0} Q${x + w * .35},${cy} ${x},${y0 + h} Q${x + w * .62},${y0 + h} ${x + w},${cy} Q${x + w * .62},${y0} ${x},${y0} Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`; };
+const notG = (x, y) => `<path d="M${x},${y - 9} L${x + 18},${y} L${x},${y + 9} Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><circle cx="${x + 22}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>`;
+const bub = (x, y) => `<circle cx="${x}" cy="${y}" r="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.2"/>`;
+const wire = (pts, v, w = 2.2) => `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${C(v)}" stroke-width="${w}" stroke-linejoin="round"/>`;
+const lab = (x, y, t, v, anchor = 'start') => `<text x="${x}" y="${y + 3.5}" text-anchor="${anchor}" font-family="IBM Plex Mono, monospace" font-size="11" fill="${v ? 'var(--hi)' : 'var(--muted)'}" font-weight="${v ? 600 : 400}">${t}</text>`;
+
+function lenSVG(o) {
+  const b = i => (o >> i) & 1;
+  const outLine = (b(7) | b(6) | b(5) | b(4) | b(3) | b(2)) === 0 && b(1) && b(0) ? 1 : 0;
+  const hltLine = o === 255 ? 1 : 0, len = outLine | hltLine;
+  let s = '', top = '';
+  // bus bits row
+  for (let i = 7; i >= 0; i--) {
+    const x = 20 + (7 - i) * 22;
+    s += `<rect x="${x - 9}" y="4" width="18" height="18" rx="3" fill="${b(i) ? 'var(--hi)' : 'var(--bg)'}" stroke="var(--line)"/><text x="${x}" y="17" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)">${b(i)}</text><text x="${x}" y="34" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">O${i}</text>`;
+  }
+  const gate = (gy, want, outV, name) => {
+    let g = '';
+    for (let i = 7; i >= 0; i--) {
+      const x = 20 + (7 - i) * 22, inv = want[7 - i] === 0, v = inv ? 1 - b(i) : b(i), yy = gy - 21 + (7 - i) * 6;
+      g += wire([[x, 38], [x, yy], [210, yy]], v, 1.4);
+      if (inv) top += bub(214, yy);
+    }
+    top += andG(218, gy, 52);
+    g += wire([[254, gy], [300, gy]], outV) + lab(258, gy - 12, name, outV);
+    return g;
+  };
+  s += gate(78, [0, 0, 0, 0, 0, 0, 1, 1], outLine, 'OUT');
+  s += gate(150, [1, 1, 1, 1, 1, 1, 1, 1], hltLine, 'HLT');
+  s += wire([[300, 78], [300, 104], [326, 104]], outLine) + wire([[300, 150], [300, 124], [326, 124]], hltLine);
+  top += orG(322, 114, 40, 40);
+  s += wire([[362, 114], [396, 114]], len) + `<circle cx="400" cy="114" r="5" fill="${C(len)}"/>` + lab(392, 136, 'LEN=' + len, len);
+  return { svg: s + top, outLine, hltLine, len };
+}
+
+function skipSVG(k, len) {
+  const t3 = k === 3 ? 1 : 0, t6 = k === 6 ? 1 : 0, nlen = 1 - len, d4 = t3 & nlen, a7 = t3 & len, d7 = t6 | a7;
+  let s = '', top = '';
+  s += lab(6, 40, 'T3', t3) + lab(6, 100, 'LEN', len) + lab(6, 160, 'T6', t6);
+  s += wire([[36, 40], [80, 40], [80, 34], [180, 34]], t3) + wire([[80, 40], [80, 106], [180, 106]], t3);
+  s += wire([[40, 100], [70, 100], [70, 66], [100, 66]], len);
+  top += notG(100, 66);
+  s += wire([[126, 66], [150, 66], [150, 46], [180, 46]], nlen);
+  s += wire([[70, 100], [70, 118], [180, 118]], len);
+  top += andG(180, 40, 28) + andG(180, 112, 28);
+  s += wire([[212, 40], [396, 40]], d4) + `<circle cx="400" cy="40" r="5" fill="${C(d4)}"/>` + lab(360, 22, 'D4=' + d4, d4);
+  s += wire([[212, 112], [260, 112], [260, 126], [290, 126]], a7) + lab(216, 98, 'T3·LEN', a7);
+  s += wire([[36, 160], [260, 160], [260, 146], [290, 146]], t6);
+  top += orG(286, 136, 36, 40);
+  s += wire([[326, 136], [396, 136]], d7) + `<circle cx="400" cy="136" r="5" fill="${C(d7)}"/>` + lab(360, 118, 'D7=' + d7, d7);
+  return { svg: s + top, d4, d7 };
+}
+
+function stateSVG(k, path) {
+  const cx = 210, cy = 160, R = 120, pos = [];
+  for (let i = 0; i < 9; i++) { const a = -Math.PI / 2 + i * 2 * Math.PI / 9; pos.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+  const jumped = path.includes(3) && path.includes(7) && !path.includes(4);
+  let s = `<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--hi)"/></marker></defs>`;
+  for (let i = 0; i < 9; i++) {
+    const [x1, y1] = pos[i], [x2, y2] = pos[(i + 1) % 9], dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), r = 27;
+    const used = path.includes(i + 1) && path.includes((i + 1) % 9 + 1) && !(i === 2 && jumped);
+    s += `<line x1="${x1 + dx / L * r}" y1="${y1 + dy / L * r}" x2="${x2 - dx / L * r}" y2="${y2 - dy / L * r}" stroke="${used ? 'var(--hi)' : 'var(--muted)'}" stroke-width="${used ? 2.5 : 1.5}" marker-end="url(#${used ? 'ah' : 'ar'})"/>`;
+  }
+  // skip arc T3 -> T7 (indices 2 -> 6) through the centre
+  const [ax, ay] = pos[2], [bx, by] = pos[6];
+  s += `<path d="M${ax - 22},${ay + 14} Q${cx},${cy + 10} ${bx + 22},${by - 14}" fill="none" stroke="${jumped ? 'var(--hi)' : 'var(--ad)'}" stroke-width="${jumped ? 3 : 2}" stroke-dasharray="${jumped ? '0' : '6 4'}" marker-end="url(#${jumped ? 'ah' : 'ar'})"/>`;
+  s += `<text x="${cx}" y="${cy - 8}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ad)">LEN = 1</text><text x="${cx}" y="${cy + 30}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">skip T4–T6</text>`;
+  for (let i = 0; i < 9; i++) {
+    const [x, y] = pos[i], n = i + 1, on = n === k, vis = path.includes(n);
+    s += `<circle cx="${x}" cy="${y}" r="25" fill="${on ? 'var(--hi)' : vis ? 'var(--accent-soft)' : 'var(--surface)'}" stroke="${on ? 'var(--hi)' : vis ? 'var(--accent)' : 'var(--line)'}" stroke-width="1.6"/><text x="${x}" y="${y + 5}" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-size="15" font-weight="600" fill="${on ? '#1a1205' : 'var(--ink)'}">T${n}</text>`;
+  }
+  s += `<text x="${pos[3][0] + 34}" y="${pos[3][1] + 4}" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">LEN = 0</text>`;
+  return s;
+}
+
+function timingSVG() {
+  // test bench: ADD (9 states), OUT (6 states), then T1 T2 T3
+  const seq = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 7, 8, 9, 1, 2, 3];
+  const L = 54, cw = 38, rh = 22, top = 30, W = L + cw * seq.length + 8, H = top + rh * 10 + 8;
+  let s = '';
+  s += `<rect x="${L}" y="2" width="${cw * 9}" height="16" rx="3" fill="var(--accent-soft)"/><text x="${L + cw * 4.5}" y="14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--accent)">ADD · LEN = 0 · 9 clocks</text>`;
+  s += `<rect x="${L + cw * 9}" y="2" width="${cw * 6}" height="16" rx="3" fill="var(--hi-soft)"/><text x="${L + cw * 12}" y="14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--hi)">OUT · LEN = 1 · 6 clocks</text>`;
+  s += `<text x="${L + cw * 16.5}" y="14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">next…</text>`;
+  const rowY = i => top + i * rh;
+  // CLK
+  s += `<text x="4" y="${rowY(0) + 15}" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)">CLK</text>`;
+  let p = [];
+  seq.forEach((_, i) => { const x = L + i * cw, hi = rowY(0) + 5, lo = rowY(0) + rh - 4; p.push([x, lo], [x, hi], [x + cw / 2, hi], [x + cw / 2, lo], [x + cw, lo]); });
+  s += `<polyline points="${p.map(q => q.join(',')).join(' ')}" fill="none" stroke="var(--muted)" stroke-width="1.4"/>`;
+  for (let t = 1; t <= 9; t++) {
+    const y0 = rowY(t), hi = y0 + 5, lo = y0 + rh - 4, skipRow = t >= 4 && t <= 6;
+    s += `<text x="4" y="${y0 + 15}" font-family="IBM Plex Mono, monospace" font-size="11" fill="${skipRow ? 'var(--muted)' : 'var(--ink)'}">T${t}</text>`;
+    let pts = [], prev = null;
+    seq.forEach((k, i) => { const x = L + i * cw, y = k === t ? hi : lo; if (prev !== null && prev !== y) pts.push([x, prev]); pts.push([x, y], [x + cw, y]); prev = y; if (k === t) s += `<rect x="${x + 1}" y="${hi - 2}" width="${cw - 2}" height="${lo - hi + 4}" fill="var(--hi)" opacity=".16"/>`; });
+    s += `<polyline points="${pts.map(q => q.join(',')).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.8"/>`;
+  }
+  // skip marker
+  const xj = L + 12 * cw;
+  s += `<line x1="${xj}" y1="${top}" x2="${xj}" y2="${H}" stroke="var(--ad)" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${xj + 4}" y="${rowY(5) + 14}" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ad)">T3 → T7</text>`;
+  for (let i = 0; i <= seq.length; i++) s += `<line x1="${L + i * cw}" y1="${top}" x2="${L + i * cw}" y2="${H}" stroke="var(--line)" stroke-dasharray="1 4"/>`;
+  const svg = $('timing'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+}
+
+/* ---------- render ---------- */
+function render() {
+  const o = curOp(), len = lenOf(o), D = nextState(st.k, len);
+  const nx = D.findIndex((v, i) => i > 0 && v);
+  const jumped = st.path.includes(3) && !st.path.includes(4) && st.path.includes(7);
+  $('m-prog').setAttribute('aria-pressed', st.mode === 'prog'); $('m-man').setAttribute('aria-pressed', st.mode === 'man');
+  $('ops').innerHTML = OPL.map(x => `<button data-op="${x}" aria-pressed="${o === x}" ${st.mode === 'prog' ? 'disabled' : ''}>${OPS[x]}</button>`).join('');
+  $('bits').innerHTML = [7, 6, 5, 4, 3, 2, 1, 0].map(b => `<button class="bit" data-bit="${b}" aria-pressed="${!!(o >> b & 1)}" ${st.mode === 'prog' ? 'disabled' : ''} aria-label="O${b}">${o >> b & 1}</button>`).join('');
+
+  $('ring').innerHTML = Array.from({ length: 9 }, (_, i) => {
+    const n = i + 1, mod = n === 4 || n === 7;
+    const dTxt = n === 1 ? 'T9' : n === 4 ? 'T3·L̅' : n === 7 ? 'T6+T3·L' : 'T' + (n - 1);
+    const cls = n === st.k ? 'on' : (jumped && n >= 4 && n <= 6) ? 'skip' : '';
+    return `<div class="ff ${cls} ${n === nx && !st.halted ? 'next' : ''} ${mod ? 'mod' : ''}"><b>T${n}</b><small>${ROLE[i]}</small><small>Q=${n === st.k ? 1 : 0}</small><small class="d">D=${dTxt}=${D[n]}</small></div>`;
+  }).join('');
+  const pills = [`<span class="pill">${OPS[o] || 'opcode ' + o.toString(16).toUpperCase() + 'H'} · ${bin(o)}</span>`, `<span class="pill ${len ? 'warn' : 'ad'}">LEN = ${len} · ${len ? '1 byte' : '2 bytes'}</span>`];
+  if (st.mode === 'prog') pills.push(`<span class="pill">PC → instruction ${Math.min(st.pc, 4) + 1} of 5</span>`);
+  if (st.k === 3 && !st.halted) pills.push(`<span class="pill ${len ? 'warn' : 'ad'}">decision edge: next state T${nx}</span>`);
+  if (st.halted) pills.push(`<span class="pill warn">HLT decoded in T7 · clock gated off</span>`);
+  pills.push(`<span class="pill">${st.path.length} clock${st.path.length > 1 ? 's' : ''} in this instruction</span>`);
+  $('status').innerHTML = pills.join('');
+
+  const l = lenSVG(o); $('lensvg').innerHTML = l.svg;
+  $('leneq').innerHTML = `<div>OUT line = O̅7·O̅6·O̅5·O̅4·O̅3·O̅2·O1·O0 = <span class="v">${l.outLine}</span></div><div>HLT line = O7·O6·O5·O4·O3·O2·O1·O0 = <span class="v">${l.hltLine}</span></div><div>LEN = OUT + HLT = <span class="v">${l.len}</span></div>`;
+  const k = skipSVG(st.k, len); $('skipsvg').innerHTML = k.svg;
+  $('skipeq').innerHTML = `<div>D4 = T3·<span class="ov">LEN</span> = <span class="v">${k.d4}</span> &nbsp;(fetch address byte only if 2 bytes)</div><div>D7 = T6 + T3·LEN = <span class="v">${k.d7}</span> &nbsp;(reach T7 from T6, or jump from T3)</div><div class="hint">All other inputs: Dk = Tk−1, and D1 = T9.</div>`;
+  $('state').innerHTML = stateSVG(st.k, st.path);
+
+  $('lentbl').innerHTML = '<tr><th>Instruction</th><th>Opcode</th><th class="c">Bytes</th><th class="c">LEN</th><th>Steps executed</th></tr>' +
+    [[0, 'T1 … T9 (9 steps)'], [1, 'T1 … T9 (9 steps)'], [2, 'T1 … T9 (9 steps)'], [3, 'T1 T2 T3 T7 T8 T9 (6 steps)'], [255, 'T1 T2 T3 T7, then the clock stops (4)']]
+      .map(([x, t]) => `<tr class="${x === o ? 'cur' : ''}"><td class="m">${OPS[x]}</td><td class="m">${bin(x).replace(/(....)/, '$1 ')}</td><td class="c m">${lenOf(x) ? 1 : 2}</td><td class="c m">${lenOf(x)}</td><td>${t}</td></tr>`).join('');
+
+  $('b-run').setAttribute('aria-pressed', !!st.timer); $('b-run').textContent = st.timer ? 'Pause' : 'Run';
+  $('b-step').disabled = $('b-run').disabled = st.halted;
+}
+
+function edge() {
+  if (st.halted) return;
+  const o = curOp(), D = nextState(st.k, lenOf(o)), nx = D.findIndex((v, i) => i > 0 && v);
+  if (nx === 1) { st.path = [1]; if (st.mode === 'prog') st.pc++; } else st.path.push(nx);
+  st.k = nx;
+  if (st.k === 7 && isHLT(curOp())) { st.halted = true; stop(); }
+}
+function stop() { if (st.timer) { clearInterval(st.timer); st.timer = null; } }
+function reset() { stop(); Object.assign(st, { k: 1, pc: 0, path: [1], halted: false }); render(); }
+
+$('b-step').onclick = () => { edge(); render(); };
+$('b-run').onclick = () => { if (st.timer) { stop(); render(); return; } st.timer = setInterval(() => { edge(); render(); }, 600); render(); };
+$('b-reset').onclick = reset;
+$('m-prog').onclick = () => { st.mode = 'prog'; reset(); };
+$('m-man').onclick = () => { st.mode = 'man'; reset(); };
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.dataset.op !== undefined) { st.op = +b.dataset.op; reset(); }
+  if (b.dataset.bit !== undefined) { st.op ^= 1 << +b.dataset.bit; reset(); }
+});
+
+/* comparison table */
+$('cmp').innerHTML = '<tr><th>Instruction</th><th class="c">Bytes</th><th class="c">Padded</th><th class="c">Skip</th><th class="c">Saved</th></tr>' +
+  [['LDA / ADD / SUB (each)', 2, 9, 9], ['OUT', 1, 9, 6], ['HLT', 1, 7, 4]].map(([a, b, p, s]) => `<tr><td>${a}</td><td class="c m">${b}</td><td class="c m">${p}</td><td class="c m">${s}</td><td class="c m">${p - s}</td></tr>`).join('') +
+  '<tr><td><b>Whole program: clock periods</b></td><td></td><td class="c m"><b>43</b></td><td class="c m"><b>37</b></td><td class="c m"><b>6</b></td></tr><tr><td>Whole program: memory bytes</td><td></td><td class="c m">10</td><td class="c m">8</td><td class="c m">2</td></tr>';
+
+/* Verilog */
+const VL = `// 9-state ring counter with skip. T[1]..T[9] are the time steps.
+module SEQ9 (clk, rst, len, T);
+  input clk, rst, len;          // len = 1 : one-byte instruction (decided in T3)
+  output [9:1] T;
+  reg [9:1] q;
+  wire nlen, d4, a7, d7;
+  not (nlen, len);
+  and (d4, q[3], nlen);         // D4 = T3 . LEN'
+  and (a7, q[3], len);          // T3 . LEN
+  or  (d7, q[6], a7);           // D7 = T6 + T3 . LEN
+  assign T = q;
+  always @(posedge clk)
+    if (rst) q <= 9'b000000001; // start in T1
+    else begin
+      q[1] <= q[9]; q[2] <= q[1]; q[3] <= q[2];
+      q[4] <= d4;   q[5] <= q[4]; q[6] <= q[5];
+      q[7] <= d7;   q[8] <= q[7]; q[9] <= q[8];
+    end
+endmodule
+
+module TB_SEQ9;
+  reg clk, rst, len;
+  wire [9:1] T;
+  SEQ9 U1 (clk, rst, len, T);
+  initial clk = 0;
+  always #5 clk = ~clk;
+  initial begin
+    rst = 1; len = 0;
+    #12  rst = 0;   // 2-byte instruction: T1..T9 (len = 0)
+    #90  len = 1;   // set during T3 of the next instruction
+    #30  len = 0;   // 1-byte instruction ran T1,T2,T3,T7,T8,T9
+    #100 $finish;
+  end
+endmodule`;
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+$('vlog').innerHTML = esc(VL).split('\n').map(line => {
+  const i = line.indexOf('//');
+  const code = (i >= 0 ? line.slice(0, i) : line).replace(/\b(module|endmodule|input|output|reg|wire|not|and|or|assign|always|if|else|begin|end|initial)\b/g, '<span class="k">$1</span>');
+  return code + (i >= 0 ? `<span class="c">${line.slice(i)}</span>` : '');
+}).join('\n');
+$('b-copy').onclick = () => {
+  const done = () => $('copied').textContent = 'Copied';
+  try { navigator.clipboard.writeText(VL).then(done, () => { selectCode(); }); } catch (e) { selectCode(); }
+};
+function selectCode() { const r = document.createRange(); r.selectNodeContents($('vlog')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('copied').textContent = 'Selected, press Cmd+C'; }
+
+timingSVG();
+render();
+</script>
+</body></html>

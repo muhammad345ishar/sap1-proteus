@@ -1,0 +1,594 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Modified SAP-1 Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-bench console (same series as SAP-1 Controller Sequencer) — machine picker, spec + address path, live state strip, registers + memory, trace, matrix, comparison */
+:root {
+  --bg: #e9edf1; --surface: #ffffff; --ink: #18212b; --muted: #5a6877; --line: #c8d1db;
+  --hi: #d9861a; --hi-soft: #fbe8cc; --lo: #9aa7b5;
+  --accent: #2c5a86; --accent-soft: #dce7f2;
+  --ad: #1f7a6d; --ad-soft: #d5ece8;
+  --display: "Chakra Petch", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+    --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+    --ad: #5cc4b3; --ad-soft: #12312c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141a; --surface: #17202a; --ink: #e2e8ee; --muted: #93a1b0; --line: #2b3745;
+  --hi: #f2a73a; --hi-soft: #3d2c12; --lo: #4d5b6a; --accent: #80b1e0; --accent-soft: #1c2e42;
+  --ad: #5cc4b3; --ad-soft: #12312c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px; margin: 0;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; line-height: 1.1; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+h3 { font-size: .95rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 70ch; margin-top: 6px; }
+.ov { text-decoration: overline; text-decoration-thickness: 1.5px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.hint { font-size: .8rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid2 > * { min-width: 0; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: flex-end; }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.group-label { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+button {
+  font-family: var(--mono); font-size: .85rem; font-weight: 500; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* format bar */
+.fmt { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 14px; }
+.byte { flex: 1 1 110px; min-width: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.byte .cap { font-family: var(--mono); font-size: .66rem; color: var(--muted); padding: 3px 8px; background: var(--bg); }
+.byte .fields { display: flex; }
+.fld { flex: 1; padding: 8px 6px; text-align: center; font-family: var(--mono); font-size: .76rem; font-weight: 600; }
+.fld.op { background: var(--accent-soft); color: var(--accent); }
+.fld.ad { background: var(--ad-soft); color: var(--ad); }
+.specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.spec { border-left: 2px solid var(--line); padding: 2px 0 2px 10px; }
+.spec b { font-family: var(--display); font-size: 1.35rem; display: block; line-height: 1.15; }
+.spec span { font-size: .76rem; color: var(--muted); }
+
+.path svg { width: 100%; height: auto; display: block; }
+
+/* state strip */
+.strip-wrap { overflow-x: auto; }
+.strip { display: grid; gap: 4px; min-width: 520px; }
+.grp { font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); padding-bottom: 3px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grp.op { border-color: var(--accent); color: var(--accent); }
+.grp.ad { border-color: var(--ad); color: var(--ad); }
+.grp.ex { border-color: var(--hi); color: var(--hi); }
+.tcell { border: 1px solid var(--line); border-radius: 6px; padding: 7px 0 5px; text-align: center; font-family: var(--mono); }
+.tcell b { display: block; font-size: .95rem; }
+.tcell small { font-size: .6rem; color: var(--muted); display: block; line-height: 1.2; }
+.tcell.done { background: var(--accent-soft); border-color: var(--accent); }
+.tcell.on { background: var(--hi); border-color: var(--hi); color: #1a1205; }
+.tcell.on small { color: #4a3510; }
+.tcell.skip { background: repeating-linear-gradient(135deg, transparent 0 5px, var(--line) 5px 6px); color: var(--muted); }
+.nowrow { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-top: 14px; }
+.sig { display: inline-block; font-family: var(--mono); font-size: .8rem; margin: 0 4px 3px 0; padding: 2px 8px; border-radius: 4px; background: var(--hi-soft); color: var(--hi); font-weight: 600; }
+.pill { font-family: var(--mono); font-size: .75rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.pill.warn { background: var(--hi-soft); color: var(--hi); }
+.pill.ad { background: var(--ad-soft); color: var(--ad); }
+.xfer { font-family: var(--mono); font-size: .9rem; }
+.counter { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+.counter b { color: var(--ink); letter-spacing: .12em; }
+
+/* registers */
+.regs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.reg { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; }
+.reg .nm { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.reg .v { font-family: var(--display); font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.reg .d { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+.reg.chg { border-color: var(--hi); box-shadow: inset 3px 0 0 var(--hi); }
+.reg.out { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.reg.out .nm, .reg.out .d { color: var(--lo); }
+
+.scroll { overflow-x: auto; }
+.tall { max-height: 360px; overflow: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .8rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+th { font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--surface); }
+td.m, th.m { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.cur td { background: var(--hi-soft); }
+tr.mar td { background: var(--accent-soft); }
+td.tick { text-align: center; color: var(--hi); font-weight: 700; }
+th.c, td.c { text-align: center; }
+.muted { color: var(--muted); }
+.mat { min-width: 640px; }
+.cmp { min-width: 620px; }
+.trace { min-width: 720px; }
+.mem { min-width: 340px; }
+tr.sep td { background: var(--bg); color: var(--muted); font-family: var(--mono); font-size: .7rem; text-align: center; padding: 3px; }
+
+.eqs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 18px; font-family: var(--mono); font-size: .82rem; }
+.eqs div { border-bottom: 1px dashed var(--line); padding: 4px 0; overflow-wrap: anywhere; }
+.eqs .ring { color: var(--ad); }
+ol.recipe { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+ol.recipe b { font-weight: 600; }
+.calc { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.calc input { font-family: var(--mono); font-size: 1rem; width: 110px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.calc .big { font-family: var(--display); font-size: 1.6rem; font-weight: 700; }
+.note { font-size: .82rem; color: var(--muted); border-left: 3px solid var(--ad); padding: 4px 0 4px 10px; max-width: 80ch; }
+footer { font-size: .78rem; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DLD · Weeks 7–8 · Modified SAP-1</div>
+    <h1>Modified SAP-1 Explorer</h1>
+    <p class="lede">The W-bus stays 8 bits wide, so an instruction of n bytes needs n fetch trips of three steps each, then up to three execute steps: 3n + 3 states. Pick a machine, switch on the skip or early reset, and step the clock. Every table below is generated from the gate equations of the notes.</p>
+  </header>
+
+  <section class="panel" aria-label="Controls">
+    <div class="controls">
+      <div class="group">
+        <span class="group-label">Instruction length n</span>
+        <div class="row" id="n-btns"></div>
+      </div>
+      <div class="group">
+        <span class="group-label">Short instructions (OUT, HLT)</span>
+        <div class="row">
+          <button id="t-skip" aria-pressed="false">Skip with LEN</button>
+          <button id="t-early" aria-pressed="false">Early reset</button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="group-label">Clock</span>
+        <div class="row">
+          <button id="b-step" class="primary">Step ▸</button>
+          <button id="b-run" aria-pressed="false">Run</button>
+          <button id="b-end">Run to HLT</button>
+          <button id="b-reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h2>Instruction format</h2><span class="hint" id="fmt-hint"></span></div>
+      <div class="fmt" id="fmt"></div>
+      <div class="specs" id="specs"></div>
+    </div>
+    <div class="panel path">
+      <div class="panel-head"><h2>Address path</h2><span class="hint" id="path-hint"></span></div>
+      <svg id="path" viewBox="0 0 560 210" role="img" aria-label="Where the MAR gets its address"></svg>
+      <p class="note" id="path-note"></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Step generator</h2><span class="hint" id="strip-hint"></span></div>
+    <div class="strip-wrap"><div class="strip" id="strip"></div></div>
+    <div class="nowrow">
+      <div><div class="group-label">Asserted now</div><div id="now-sigs"></div></div>
+      <div><div class="group-label">At the next clock edge</div><div class="xfer" id="now-xfer"></div></div>
+      <div class="counter" id="counter"></div>
+      <div id="now-pills" class="row"></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h2>Registers</h2><span class="hint">amber edge = changed on the last clock</span></div>
+      <div class="regs" id="regs"></div>
+      <div style="margin-top:14px">
+        <div class="group-label" style="margin-bottom:6px">Finished instructions</div>
+        <div class="scroll"><table id="inslog"></table></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Memory image</h2><span class="hint" id="mem-hint"></span></div>
+      <div class="scroll tall"><table class="mem" id="mem"></table></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Program trace</h2><span class="hint">one row per clock edge · registers shown after the edge · hex</span></div>
+    <div class="scroll tall"><table class="trace" id="trace"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Control-word matrix</h2><span class="hint">tick = signal at its active level · bar = active-low · highlighted row = current state</span></div>
+    <div class="scroll"><table class="mat" id="matrix"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Gate equations</h2><span class="hint" id="eq-hint"></span></div>
+    <div class="eqs" id="eqs"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>All machines side by side</h2><span class="hint">clock counts come from running the example program with the options above</span></div>
+    <div class="scroll"><table class="cmp" id="cmp"></table></div>
+    <p class="hint" style="margin-top:10px">HLT is counted up to and including the state where the gated clock stops (T3n+1). The notes count SAP-1 HLT as 3 useful steps, which leaves that last state out.</p>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h2>Why two bytes?</h2><span class="hint">opcode bits from the instruction count</span></div>
+      <div class="calc">
+        <label for="ninst" class="group-label">Instructions needed</label>
+        <input id="ninst" type="number" min="2" max="65536" value="180">
+        <div class="big mono" id="obits"></div>
+      </div>
+      <p style="margin-top:10px" id="calc-text"></p>
+      <p class="note" style="margin-top:10px">What stays the same: the accumulator, B register, adder/subtractor, output register and the 8-bit W-bus. Only the address-and-instruction side gets wider, and the controller gets more timing steps.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Seven design steps</h2><span class="hint">the recipe from Chapter 6</span></div>
+      <ol class="recipe">
+        <li><b>Fix the format.</b> How many bytes, and which are opcode, address or data.</li>
+        <li><b>Size the machine.</b> Address bits set memory, PC and MAR width; opcode bits set the decoder.</li>
+        <li><b>Count the states</b> (3n + 3) and choose a ring counter or a binary counter + decoder.</li>
+        <li><b>Write the control table:</b> which signals are on in each Tk for each instruction.</li>
+        <li><b>Read off one equation per signal:</b> OR of (step AND instruction).</li>
+        <li><b>Handle short instructions:</b> skip to the first execute step, or pad them.</li>
+        <li><b>Test</b> by tracing a small program against the table.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>Example program from the notes: LDA, ADD, SUB, OUT, HLT on data 9, 5, 3, so A = 9 + 5 − 3 = 11 (0BH). Opcodes: LDA 00, ADD 01, SUB 02, OUT 03, HLT FF (SAP-1 uses the 4-bit codes 0, 1, 2, 3, F). Data addresses: SAP-1 8–A, 2-byte 10–12H, 3-byte 0100–0102H, 4-byte 000100–000102H.</footer>
+</div>
+
+<script>
+const CFG = {
+  1: { name: 'SAP-1', addrBits: 4, mem: '16 B', data: [8, 9, 10] },
+  2: { name: '2-byte', addrBits: 8, mem: '256 B', data: [0x10, 0x11, 0x12] },
+  3: { name: '3-byte', addrBits: 16, mem: '64 KB', data: [0x100, 0x101, 0x102] },
+  4: { name: '4-byte', addrBits: 24, mem: '16 MB', data: [0x100, 0x101, 0x102] },
+};
+const IRS = { 1: ['LI'], 2: ['LIH', 'LIL'], 3: ['LIH', 'LIM', 'LIL'], 4: ['LIH', 'LI2', 'LIM', 'LIL'] };
+const IRN = { 1: ['IR'], 2: ['IRH', 'IRL'], 3: ['IRH', 'IRM', 'IRL'], 4: ['IRH', 'IR2', 'IRM', 'IRL'] };
+const ADDR = { 1: 'EI', 2: 'EIL', 3: 'SEL', 4: 'SEL' };
+const LOW = new Set(['Lm', 'CE', 'LI', 'LIH', 'LIL', 'LIM', 'LI2', 'LA', 'LB', 'Lo']);
+const MEMI = ['LDA', 'ADD', 'SUB'];
+const PROG = [['LDA', 0], ['ADD', 1], ['SUB', 2], ['OUT'], ['HLT']];
+const DATA = [9, 5, 3];
+const OP8 = { LDA: 0, ADD: 1, SUB: 2, OUT: 3, HLT: 255 };
+const OP4 = { LDA: 0, ADD: 1, SUB: 2, OUT: 3, HLT: 15 };
+
+const S = { n: 2, skip: false, early: false, timer: null, sim: null, mem: null, prev: {} };
+const $ = id => document.getElementById(id);
+const nm = k => LOW.has(k) ? `<span class="ov">${k}</span>` : k;
+const hex = (v, d) => v === null || v === undefined ? '–' : v.toString(16).toUpperCase().padStart(d, '0');
+const aDig = n => CFG[n].addrBits / 4;
+
+function sigList(n) { return ['Ep', 'Lm', 'Cp', 'CE', ...IRS[n], ADDR[n], 'LA', 'EA', 'Su', 'Eu', 'LB', 'Lo']; }
+function decode(n, b) {
+  if (n === 1) return { 0: 'LDA', 1: 'ADD', 2: 'SUB', 3: 'OUT', 15: 'HLT' }[b >> 4] || '—';
+  return { 0: 'LDA', 1: 'ADD', 2: 'SUB', 3: 'OUT', 255: 'HLT' }[b] || '—';
+}
+const isShort = (n, b) => { const d = decode(n, b); return d === 'OUT' || d === 'HLT'; };
+
+/* signals asserted in state k for instruction ins (general n-byte equations) */
+function active(n, k, ins) {
+  const F = 3 * n, s = [];
+  if (k <= F) {
+    const j = (k - 1) % 3, b = Math.floor((k - 1) / 3);
+    if (j === 0) s.push('Ep', 'Lm'); else if (j === 1) s.push('Cp'); else s.push('CE', IRS[n][b]);
+    return s;
+  }
+  const e = k - F;
+  if (e === 1) { if (MEMI.includes(ins)) s.push('Lm', ADDR[n]); if (ins === 'OUT') s.push('EA', 'Lo'); }
+  if (e === 2) { if (ins === 'LDA') s.push('CE', 'LA'); if (ins === 'ADD' || ins === 'SUB') s.push('CE', 'LB'); }
+  if (e === 3) { if (ins === 'ADD') s.push('Eu', 'LA'); if (ins === 'SUB') s.push('Su', 'Eu', 'LA'); }
+  return s;
+}
+function stateRole(n, k) {
+  const F = 3 * n;
+  if (k <= F) { const j = (k - 1) % 3, b = Math.floor((k - 1) / 3); return ['PC→MAR', 'PC+1', '→' + IRN[n][b]][j]; }
+  return ['E1 addr', 'E2 data', 'E3 ALU'][k - F - 1];
+}
+
+function buildMem(n, skip) {
+  const mem = new Map(), note = new Map(), da = CFG[n].data; let p = 0;
+  if (n === 1) {
+    PROG.forEach(([m, d]) => { const a = d === undefined ? 0 : da[d]; mem.set(p, (OP4[m] << 4) | a); note.set(p, d === undefined ? m + ' (low nibble unused)' : `${m} ${hex(da[d], 1)}H`); p++; });
+  } else {
+    PROG.forEach(([m, d]) => {
+      mem.set(p, OP8[m]); note.set(p, `${m} opcode → IRH`); p++;
+      if (d !== undefined) { const a = da[d]; for (let i = n - 2; i >= 0; i--) { mem.set(p, (a >> (8 * i)) & 255); note.set(p, `address byte → ${IRN[n][n - 1 - i]}`); p++; } }
+      else if (!skip) { for (let i = 1; i < n; i++) { mem.set(p, 0); note.set(p, `dummy byte (padding) → ${IRN[n][i]}`); p++; } }
+    });
+  }
+  da.forEach((a, i) => { mem.set(a, DATA[i]); note.set(a, `data ${DATA[i]}`); });
+  return { mem, note, bytes: p };
+}
+
+function newSim(n) { return { k: 1, PC: 0, MAR: 0, IR: Array(n).fill(0), A: 0, B: 0, OUT: 0, halted: false, edges: 0, path: [1], trace: [], instrs: [] }; }
+function irAddr(n, s) { if (n === 1) return s.IR[0] & 15; let a = 0; for (let i = 1; i < n; i++) a = a * 256 + s.IR[i]; return a; }
+
+function comb(ctx, s) {
+  const n = ctx.n, F = 3 * n, ins = s.k > F ? decode(n, s.IR[0]) : null, sig = active(n, s.k, ins), has = x => sig.includes(x);
+  let bus = null, path = null; const ia = irAddr(n, s);
+  if (has('Ep')) bus = s.PC;
+  if (has('CE')) bus = ctx.mem.mem.get(s.MAR) ?? 0;
+  if (has('EA')) bus = s.A;
+  if (has('Eu')) bus = (has('Su') ? s.A - s.B : s.A + s.B) & 255;
+  if (has('EI') || has('EIL')) bus = ia;
+  if (has('SEL')) path = ia;
+  return { sig, ins, bus, path, ia };
+}
+
+function edge(ctx, s) {
+  if (s.halted) return;
+  const n = ctx.n, F = 3 * n, c = comb(ctx, s), has = x => c.sig.includes(x), mask = 2 ** CFG[n].addrBits - 1;
+  const kWas = s.k;
+  if (has('Lm')) s.MAR = has('Ep') ? s.PC : c.ia;
+  if (has('Cp')) s.PC = (s.PC + 1) % (mask + 1);
+  IRS[n].forEach((x, b) => { if (has(x)) s.IR[b] = c.bus; });
+  if (has('LA')) s.A = c.bus;
+  if (has('LB')) s.B = c.bus;
+  if (has('Lo')) s.OUT = c.bus;
+  const ins = decode(n, s.IR[0]);
+  let nx, jumped = false;
+  if (ctx.skip && n > 1 && kWas === 3 && isShort(n, c.bus)) { nx = F + 1; jumped = true; }
+  else if (ctx.early && ((kWas === F + 2 && ins === 'LDA') || (kWas === F + 1 && ins === 'OUT'))) nx = 1;
+  else nx = kWas === F + 3 ? 1 : kWas + 1;
+  s.edges++;
+  s.trace.push({ t: 'T' + kWas, sig: c.sig, bus: c.path !== null ? c.path : c.bus, sel: c.path !== null, PC: s.PC, MAR: s.MAR, IR: [...s.IR], A: s.A, B: s.B, OUT: s.OUT, first: kWas === 1, jumped });
+  if (nx === 1) { s.instrs.push({ ins, path: [...s.path] }); s.path = [1]; } else s.path.push(nx);
+  s.k = nx;
+  if (nx === F + 1 && ins === 'HLT') {
+    s.halted = true; s.instrs.push({ ins: 'HLT', path: [...s.path] });
+    s.trace.push({ t: 'T' + nx, halt: true, PC: s.PC, MAR: s.MAR, IR: [...s.IR], A: s.A, B: s.B, OUT: s.OUT });
+  }
+}
+
+function runAll(n, skip, early) {
+  const ctx = { n, skip, early, mem: buildMem(n, skip) }, s = newSim(n);
+  let g = 0; while (!s.halted && g++ < 2000) edge(ctx, s);
+  const per = {}; s.instrs.forEach(i => per[i.ins] = i.path.length);
+  return { per, periods: s.edges + 1, bytes: ctx.mem.bytes, A: s.A, OUT: s.OUT };
+}
+
+/* ---------------- render ---------------- */
+function ctx() { return { n: S.n, skip: S.skip, early: S.early, mem: S.mem }; }
+
+function renderControls() {
+  $('n-btns').innerHTML = [1, 2, 3, 4].map(n => `<button data-n="${n}" aria-pressed="${S.n === n}">${n === 1 ? '1 · SAP-1' : n + '-byte'}</button>`).join('');
+  $('t-skip').setAttribute('aria-pressed', S.skip); $('t-skip').disabled = S.n === 1;
+  $('t-early').setAttribute('aria-pressed', S.early);
+  $('b-run').setAttribute('aria-pressed', !!S.timer); $('b-run').textContent = S.timer ? 'Pause' : 'Run';
+  $('b-step').disabled = $('b-run').disabled = $('b-end').disabled = S.sim.halted;
+}
+
+function renderFormat() {
+  const n = S.n; let h = '';
+  if (n === 1) h = `<div class="byte"><div class="cap">byte 1 → IR</div><div class="fields"><div class="fld op">I7–I4 opcode</div><div class="fld ad">A3–A0 address</div></div></div>`;
+  else {
+    h = `<div class="byte"><div class="cap">byte 1 → IRH</div><div class="fields"><div class="fld op">opcode 8 bits</div></div></div>`;
+    for (let i = 1; i < n; i++) { const hiB = 8 * (n - i) - 1, loB = 8 * (n - i - 1); h += `<div class="byte"><div class="cap">byte ${i + 1} → ${IRN[n][i]}</div><div class="fields"><div class="fld ad">A${hiB}–A${loB}</div></div></div>`; }
+  }
+  $('fmt').innerHTML = h;
+  $('fmt-hint').textContent = n === 1 ? '[op 4 | addr 4]' : `[op 8][addr ${8 * (n - 1)}]`;
+  const a = CFG[n].addrBits, st = 3 * n + 3, bc = Math.ceil(Math.log2(st));
+  const chips = a / 4;
+  $('specs').innerHTML = [
+    [a + ' bit', 'address, PC and MAR width'], [CFG[n].mem, `memory (2^${a} × 8)`],
+    [n === 1 ? 'IR' : IRN[n].join(' '), 'instruction registers'], [3 * n + ' + 3', 'fetch + execute steps'],
+    [st, 'states, T1–T' + st], [`${st} or ${bc}`, `ring flip-flops, or ${bc}-bit counter + ${bc}→${2 ** bc} decoder`],
+    [chips + '×', '74LS173 for the MAR'], [n >= 3 ? chips + '×' : 'none', '74LS157 address selector'],
+  ].map(([b, s]) => `<div class="spec"><b class="mono">${b}</b><span>${s}</span></div>`).join('');
+}
+
+function renderPath(c) {
+  const n = S.n, has = x => c.sig.includes(x), A = CFG[n].addrBits;
+  const on = v => v ? 'var(--hi)' : 'var(--lo)';
+  const box = (x, y, w, h, t, sub, lit) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${lit ? 'var(--hi-soft)' : 'var(--surface)'}" stroke="${lit ? 'var(--hi)' : 'var(--line)'}" stroke-width="1.5"/><text x="${x + w / 2}" y="${y + h / 2 - (sub ? 3 : -4)}" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-size="14" font-weight="600" fill="var(--ink)">${t}</text>` + (sub ? `<text x="${x + w / 2}" y="${y + h / 2 + 13}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">${sub}</text>` : '');
+  const ln = (pts, v, w) => `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${on(v)}" stroke-width="${v ? 3 : 2}" stroke-linejoin="round"/>` + (w ? `<text x="${pts[0][0] + (pts[1][0] - pts[0][0]) / 2}" y="${pts[0][1] - 6}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">${w}</text>` : '');
+  const irLbl = n === 1 ? 'IR low nibble' : n === 2 ? 'IRL' : n === 3 ? 'IRM : IRL' : 'IR2:IRM:IRL';
+  const pcOn = has('Ep'), irOn = has('EI') || has('EIL') || has('SEL'), lm = has('Lm'), ce = has('CE');
+  let s = '';
+  if (n <= 2) {
+    s += box(10, 22, 120, 54, 'PC', `${A}-bit counter`, pcOn) + box(10, 134, 120, 54, n === 1 ? 'IR' : 'IRL', irLbl, irOn);
+    s += `<rect x="200" y="14" width="26" height="182" rx="5" fill="${(pcOn || irOn) ? 'var(--hi-soft)' : 'var(--bg)'}" stroke="var(--line)"/><text x="213" y="108" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" transform="rotate(-90 213 108)">W-bus · 8 bit</text>`;
+    s += ln([[130, 49], [200, 49]], pcOn, has('Ep') ? 'Ep' : '') + ln([[130, 161], [200, 161]], irOn, irOn ? ADDR[n] : '');
+    s += ln([[226, 105], [300, 105]], lm, lm ? 'Lm' : '') + box(300, 78, 110, 54, 'MAR', `${A / 4}× 74LS173`, lm);
+    s += ln([[410, 105], [440, 105]], true, A + '') + box(440, 70, 110, 70, 'Memory', CFG[n].mem, ce);
+  } else {
+    s += box(10, 22, 120, 54, 'PC', `${A}-bit counter`, pcOn) + box(10, 134, 120, 54, 'IR address', irLbl, irOn);
+    s += `<path d="M190,30 L250,55 L250,155 L190,180 Z" fill="${(pcOn && lm) || irOn ? 'var(--hi-soft)' : 'var(--surface)'}" stroke="var(--ink)" stroke-width="1.5"/><text x="220" y="100" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink)">2→1</text><text x="220" y="114" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">${A / 4}×157</text>`;
+    s += `<text x="196" y="52" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">0</text><text x="196" y="164" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">1</text>`;
+    s += ln([[130, 49], [190, 49]], pcOn && lm, A + '') + ln([[130, 161], [190, 161]], irOn, A + '');
+    s += `<line x1="220" y1="196" x2="220" y2="168" stroke="${on(irOn)}" stroke-width="2"/><text x="226" y="205" font-family="IBM Plex Mono, monospace" font-size="10" fill="${irOn ? 'var(--hi)' : 'var(--muted)'}">select = T${3 * n + 1}·MEM = ${irOn ? 1 : 0}</text>`;
+    s += ln([[250, 105], [300, 105]], lm, lm ? 'Lm' : '') + box(300, 78, 110, 54, 'MAR', `${A / 4}× 74LS173`, lm);
+    s += ln([[410, 105], [440, 105]], true, A + '') + box(440, 70, 110, 70, 'Memory', CFG[n].mem, ce);
+    s += `<text x="495" y="168" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">data: 8-bit W-bus</text>`;
+  }
+  $('path').innerHTML = s;
+  $('path-hint').textContent = n <= 2 ? 'address rides the W-bus' : 'address wider than the bus';
+  $('path-note').textContent = n === 1 ? 'The PC sends the address in T1 and the IR low nibble sends it in T4. Both go through the same MAR; only the step decides who is the sender.'
+    : n === 2 ? 'The 8-bit address byte fits the W-bus exactly, so EIL puts IRL on the bus and Lm loads the 8-bit MAR in one step.'
+      : `A ${A}-bit address does not fit on the 8-bit W-bus, so the MAR gets its own ${A}-line path through a 2-to-1 selector: the PC during fetch, ${irLbl} during the first execute step.`;
+}
+
+function renderStrip(c) {
+  const n = S.n, F = 3 * n, T = F + 3, s = S.sim;
+  const jumped = s.path.includes(F + 1) && s.path.includes(3) && !s.path.includes(4) && n > 1;
+  let g = '';
+  for (let b = 0; b < n; b++) g += `<div class="grp ${b ? 'ad' : 'op'}" style="grid-column:span 3">byte ${b + 1} · ${b ? 'address' : 'opcode'}${n === 1 ? ' + address' : ''}</div>`;
+  g += `<div class="grp ex" style="grid-column:span 3">execute</div>`;
+  for (let k = 1; k <= T; k++) {
+    const cls = k === s.k ? 'on' : (jumped && k > 3 && k <= F) ? 'skip' : s.path.includes(k) ? 'done' : '';
+    g += `<div class="tcell ${cls}"><b>T${k}</b><small>${stateRole(n, k)}</small></div>`;
+  }
+  $('strip').style.gridTemplateColumns = `repeat(${T}, minmax(0, 1fr))`;
+  $('strip').innerHTML = g;
+  const bc = Math.ceil(Math.log2(T)), ring = Array.from({ length: T }, (_, i) => i + 1 === s.k ? 1 : 0).join('');
+  $('counter').innerHTML = `ring <b>${ring}</b><br>or counter <b>${(s.k - 1).toString(2).padStart(bc, '0')}</b> → decoder Y${s.k - 1} = T${s.k}`;
+  $('strip-hint').textContent = `${T} states · ${S.skip && n > 1 ? 'skip on: D4 = T3·LEN̄, D' + (F + 1) + ' = T' + F + ' + T3·LEN' : 'every instruction walks the full ring'}${S.early ? ' · early reset on' : ''}`;
+  // now
+  $('now-sigs').innerHTML = s.halted ? '<span class="pill warn">clock gated off</span>' : c.sig.length ? c.sig.map(x => `<span class="sig">${nm(x)}</span>`).join('') : '<span class="muted mono">none (idle state)</span>';
+  $('now-xfer').innerHTML = s.halted ? 'HLT decoded: gated clock = CLK·HLT̄ stays 0' : xferText(c);
+  const pills = [];
+  pills.push(`<span class="pill">${s.k <= F ? 'fetch byte ' + (Math.floor((s.k - 1) / 3) + 1) : 'execute'}</span>`);
+  if (s.k > F) pills.push(`<span class="pill">decoder: ${c.ins}</span>`);
+  if (n > 1 && s.k === 3 && !s.halted) { const L = isShort(n, c.bus) ? 1 : 0; pills.push(`<span class="pill ${L ? 'warn' : 'ad'}">LEN from bus = ${L}${S.skip ? (L ? ' → jump to T' + (F + 1) : ' → T4') : ' (skip off)'}</span>`); }
+  pills.push(`<span class="pill">${s.edges + (s.halted ? 1 : 0)} clock periods</span>`);
+  $('now-pills').innerHTML = pills.join('');
+}
+
+function xferText(c) {
+  const n = S.n, has = x => c.sig.includes(x), d = aDig(n), t = [];
+  if (has('Ep') && has('Lm')) t.push(`PC (${hex(c.bus, d)}) → bus → MAR`);
+  if (has('Cp')) t.push('PC ← PC + 1');
+  const ir = IRS[n].findIndex(x => has(x)); if (ir >= 0) t.push(`M[MAR] = ${hex(c.bus, 2)} → bus → ${IRN[n][ir]}`);
+  if (has('EI') || has('EIL')) t.push(`${n === 1 ? 'IR low nibble' : 'IRL'} (${hex(c.bus, d)}) → bus → MAR`);
+  if (has('SEL')) t.push(`${n === 3 ? 'IRM:IRL' : 'IR2:IRM:IRL'} (${hex(c.path, d)}) → selector → MAR`);
+  if (has('CE') && has('LA')) t.push(`M[MAR] = ${hex(c.bus, 2)} → bus → A`);
+  if (has('CE') && has('LB')) t.push(`M[MAR] = ${hex(c.bus, 2)} → bus → B`);
+  if (has('Eu')) t.push(`A ${has('Su') ? '−' : '+'} B = ${hex(c.bus, 2)} → bus → A`);
+  if (has('EA')) t.push(`A (${hex(c.bus, 2)}) → bus → output register`);
+  return t.length ? t.join('<br>') : '<span class="muted">nothing happens in this state</span>';
+}
+
+function renderRegs() {
+  const n = S.n, s = S.sim, d = aDig(n), p = S.prev, ins = decode(n, s.IR[0]);
+  const items = [['PC', hex(s.PC, d), s.PC], ['MAR', hex(s.MAR, d), s.MAR]];
+  IRN[n].forEach((x, i) => items.push([x, hex(s.IR[i], 2), s.IR[i], i === 0 ? ins : 'addr']));
+  items.push(['A', hex(s.A, 2), s.A], ['B', hex(s.B, 2), s.B]);
+  $('regs').innerHTML = items.map(([k, v, raw, sub]) => `<div class="reg ${p[k] !== undefined && p[k] !== raw ? 'chg' : ''}"><div class="nm">${k}</div><div class="v">${v}</div><div class="d">${sub ?? 'dec ' + raw}</div></div>`).join('')
+    + `<div class="reg out"><div class="nm">Output LEDs</div><div class="v">${s.OUT}</div><div class="d">${s.OUT.toString(2).padStart(8, '0')}</div></div>`;
+  const log = s.instrs.map(i => `<tr><td class="m">${i.ins}</td><td class="m">${i.path.map(k => 'T' + k).join(' ')}</td><td class="m c">${i.path.length}</td></tr>`).join('');
+  $('inslog').innerHTML = `<tr><th>Instr</th><th>States visited</th><th class="c">Clocks</th></tr>` + (log || `<tr><td colspan="3" class="muted">Step the clock to finish the first instruction.</td></tr>`);
+}
+
+function renderMem() {
+  const n = S.n, s = S.sim, d = aDig(n), M = S.mem;
+  const keys = [...M.mem.keys()].sort((a, b) => a - b), c = comb(ctx(), s), reading = c.sig.includes('CE');
+  let h = '<tr><th>Addr</th><th>Hex</th><th>Binary</th><th>Meaning</th></tr>', last = -1;
+  const rows = n === 1 ? Array.from({ length: 16 }, (_, i) => i) : keys;
+  for (const a of rows) {
+    if (n === 1 && a === 8) h += `<tr class="sep"><td colspan="4">data storage · locations 8–15</td></tr>`;
+    if (n === 1 && a === 0) h += `<tr class="sep"><td colspan="4">program memory · locations 0–7</td></tr>`;
+    if (n > 1 && last >= 0 && a > last + 1) h += `<tr class="sep"><td colspan="4">…</td></tr>`;
+    const v = M.mem.get(a), cls = a === s.MAR ? (reading && !s.halted ? 'cur' : 'mar') : '';
+    h += `<tr class="${cls}"><td class="m">${hex(a, d)}</td><td class="m">${v === undefined ? '–' : hex(v, 2)}</td><td class="m">${v === undefined ? '' : v.toString(2).padStart(8, '0')}</td><td>${M.note.get(a) || '<span class="muted">empty</span>'}</td></tr>`;
+    last = a;
+  }
+  $('mem').innerHTML = h;
+  $('mem-hint').textContent = `${M.bytes} program bytes · blue = MAR, amber = being read`;
+}
+
+function renderTrace() {
+  const n = S.n, s = S.sim, d = aDig(n);
+  let h = `<tr><th>Step</th><th>Active signals</th><th>Bus</th><th>PC</th><th>MAR</th><th>${IRN[n].join(' ')}</th><th>A</th><th>B</th><th>Out</th></tr>`;
+  if (!s.trace.length) h += `<tr><td colspan="9" class="muted">No clock edges yet. Press Step or Run to HLT.</td></tr>`;
+  s.trace.forEach((r, i) => {
+    const top = r.first && i ? ' style="border-top:2px solid var(--line)"' : '';
+    if (r.halt) { h += `<tr class="cur"><td class="m">${r.t}</td><td>HLT decoded: clock gated off</td><td class="m">–</td><td class="m">${hex(r.PC, d)}</td><td class="m">${hex(r.MAR, d)}</td><td class="m">${r.IR.map(x => hex(x, 2)).join(' ')}</td><td class="m">${hex(r.A, 2)}</td><td class="m">${hex(r.B, 2)}</td><td class="m">${hex(r.OUT, 2)}</td></tr>`; return; }
+    const busD = r.bus === null ? '–' : r.sel ? hex(r.bus, d) + ' (sel)' : hex(r.bus, (r.sig.includes('Ep') ? d : 2));
+    h += `<tr${top}><td class="m">${r.t}${r.jumped ? ' ⤳' : ''}</td><td>${r.sig.length ? r.sig.map(nm).join(', ') : '<span class="muted">(none)</span>'}</td><td class="m">${busD}</td><td class="m">${hex(r.PC, d)}</td><td class="m">${hex(r.MAR, d)}</td><td class="m">${r.IR.map(x => hex(x, 2)).join(' ')}</td><td class="m">${hex(r.A, 2)}</td><td class="m">${hex(r.B, 2)}</td><td class="m">${hex(r.OUT, 2)}</td></tr>`;
+  });
+  $('trace').innerHTML = h;
+  const box = $('trace').parentElement; box.scrollTop = box.scrollHeight;
+}
+
+function renderMatrix(c) {
+  const n = S.n, F = 3 * n, L = sigList(n), s = S.sim;
+  const rows = [];
+  for (let k = 1; k <= F; k++) rows.push({ k, ins: null, lbl: 'T' + k });
+  [['LDA', 2], ['ADD', 3], ['SUB', 3], ['OUT', 1]].forEach(([i, m]) => { for (let e = 1; e <= m; e++) rows.push({ k: F + e, ins: i, lbl: `T${F + e} ${i}` }); });
+  let h = '<tr><th>Step</th>' + L.map(x => `<th class="c">${nm(x)}</th>`).join('') + '</tr>';
+  rows.forEach(r => {
+    const a = active(n, r.k, r.ins), cur = !s.halted && r.k === s.k && (r.ins === null || r.ins === c.ins);
+    h += `<tr class="${cur ? 'cur' : ''}"><td class="m">${r.lbl}</td>` + L.map(x => `<td class="tick">${a.includes(x) ? '✓' : ''}</td>`).join('') + '</tr>';
+  });
+  $('matrix').innerHTML = h;
+}
+
+function renderEqs() {
+  const n = S.n, F = 3 * n, E = i => 'T' + (F + i), sum = f => Array.from({ length: n }, (_, k) => 'T' + f(k + 1)).join(' + ');
+  const L = [
+    ['Ep', sum(k => 3 * k - 2)], ['Cp', sum(k => 3 * k - 1)],
+    ...IRS[n].map((x, i) => [x, 'T' + 3 * (i + 1)]),
+    ['Lm', sum(k => 3 * k - 2) + ` + ${E(1)}·MEM`], ['CE', sum(k => 3 * k) + ` + ${E(2)}·MEM`],
+    [ADDR[n], `${E(1)}·MEM`], ['LA', `${E(2)}·LDA + ${E(3)}·(ADD + SUB)`], ['LB', `${E(2)}·(ADD + SUB)`],
+    ['Eu', `${E(3)}·(ADD + SUB)`], ['Su', `${E(3)}·SUB`], ['EA', `${E(1)}·OUT`], ['Lo', `${E(1)}·OUT`], ['MEM', 'LDA + ADD + SUB'],
+  ];
+  let h = L.map(([k, v]) => `<div>${nm(k)} = ${v}</div>`).join('');
+  if (n > 1) h += `<div class="ring">D4 = T3·<span class="ov">LEN</span> &nbsp;(skip)</div><div class="ring">D${F + 1} = T${F} + T3·LEN &nbsp;(skip)</div>`;
+  h += `<div class="ring">D1 = ${E(3)}${S.early ? ` + ${E(2)}·LDA + ${E(1)}·OUT (early reset)` : ' (ring closes)'}</div>`;
+  if (n === 1) h += `<div class="ring">gated clock = CLK·<span class="ov">HLT</span></div>`;
+  $('eqs').innerHTML = h;
+  $('eq-hint').textContent = `${CFG[n].name} · signal = OR of (step AND instruction)${n >= 3 ? ' · SEL is the selector input, not a W-bus enable' : ''}`;
+}
+
+function renderCmp() {
+  const R = [1, 2, 3, 4].map(n => runAll(n, S.skip && n > 1, S.early));
+  const row = (lbl, f) => `<tr><td>${lbl}</td>${[1, 2, 3, 4].map((n, i) => `<td class="m c" ${n === S.n ? 'style="background:var(--accent-soft)"' : ''}>${f(n, R[i])}</td>`).join('')}</tr>`;
+  $('cmp').innerHTML = `<tr><th></th>${[1, 2, 3, 4].map(n => `<th class="c">${n === 1 ? '1 byte (SAP-1)' : n + ' byte'}</th>`).join('')}</tr>`
+    + row('Format', n => n === 1 ? '[op|addr 4+4]' : `[op 8][addr ${8 * (n - 1)}]`)
+    + row('Address bits / memory', n => `${CFG[n].addrBits} / ${CFG[n].mem}`)
+    + row('IR registers', n => IRN[n].join(', '))
+    + row('Fetch steps (3n)', n => 3 * n)
+    + row('States (3n + 3)', n => 3 * n + 3)
+    + row('Ring flip-flops', n => 3 * n + 3)
+    + row('Binary counter + decoder', n => { const b = Math.ceil(Math.log2(3 * n + 3)); return `${b}-bit + ${b}→${2 ** b}`; })
+    + row('LDA clocks', (n, r) => r.per.LDA)
+    + row('ADD / SUB clocks', (n, r) => `${r.per.ADD} / ${r.per.SUB}`)
+    + row('OUT clocks', (n, r) => r.per.OUT)
+    + row('HLT clocks', (n, r) => r.per.HLT)
+    + row('<b>Whole program: clocks</b>', (n, r) => `<b>${r.periods}</b>`)
+    + row('Whole program: bytes', (n, r) => r.bytes)
+    + row('Result on LEDs', (n, r) => r.OUT);
+}
+
+function renderCalc() {
+  const N = Math.max(2, Math.min(65536, +$('ninst').value || 2)), b = Math.ceil(Math.log2(N));
+  $('obits').textContent = `${b}-bit opcode`;
+  $('calc-text').innerHTML = `2<sup>${b - 1}</sup> = ${2 ** (b - 1)} &lt; ${N} ≤ 2<sup>${b}</sup> = ${2 ** b}, so the decoder needs ${b} input bits (up to ${2 ** b} lines). ${b <= 8 ? 'One opcode byte is enough. With an 8-bit address (256 locations) that is 1 + 1 = a 2-byte instruction, fetched in two trips over the unchanged 8-bit bus.' : 'That no longer fits one byte, so the opcode itself would need two bytes.'}`;
+}
+
+function render() {
+  const c = comb(ctx(), S.sim);
+  renderControls(); renderFormat(); renderPath(c); renderStrip(c); renderRegs(); renderMem(); renderTrace(); renderMatrix(c); renderEqs();
+}
+function snapPrev() { const s = S.sim, p = { PC: s.PC, MAR: s.MAR, A: s.A, B: s.B }; IRN[S.n].forEach((x, i) => p[x] = s.IR[i]); S.prev = p; }
+function step() { snapPrev(); edge(ctx(), S.sim); if (S.sim.halted) stop(); render(); }
+function stop() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+function reset() { stop(); S.mem = buildMem(S.n, S.skip && S.n > 1); S.sim = newSim(S.n); S.prev = {}; render(); renderCmp(); }
+
+$('b-step').onclick = step;
+$('b-run').onclick = () => { if (S.timer) { stop(); render(); return; } S.timer = setInterval(step, 550); render(); };
+$('b-end').onclick = () => { stop(); snapPrev(); let g = 0; while (!S.sim.halted && g++ < 2000) edge(ctx(), S.sim); render(); };
+$('b-reset').onclick = reset;
+$('t-skip').onclick = () => { S.skip = !S.skip; reset(); };
+$('t-early').onclick = () => { S.early = !S.early; reset(); };
+$('n-btns').onclick = e => { const b = e.target.closest('button'); if (b) { S.n = +b.dataset.n; reset(); } };
+$('ninst').oninput = renderCalc;
+
+reset(); renderCalc();
+</script>
+</body></html>
