@@ -16,6 +16,11 @@ Malvino's **Simple-As-Possible (SAP-1)** 8-bit computer, built from 74LS-series 
 | [Variable-Length SAP-1](https://muhammad345ishar.github.io/sap1-proteus/variable-length-sap1.html) | LEN signal and the T3 → T7 skip in the 9-bit ring counter, with Verilog |
 | [SAP-1 Revision Kit](https://muhammad345ishar.github.io/sap1-proteus/sap1-revision-kit.html) | Hardware bench widgets, revision tables and a quiz |
 
+## Exam solutions
+| Page | What it covers |
+|---|---|
+| [DLD Terminal 2025, Solved](https://muhammad345ishar.github.io/sap1-proteus/dld-terminal-2025.html) | Worked answers to the 1 Jan 2025 Digital Logic Design terminal paper, with diagrams |
+
 ## The machine
 - 8-bit W bus, 4-bit program counter and MAR, 16 bytes of memory
 - 5 instructions: `LDA`, `ADD`, `SUB`, `OUT`, `HLT`, with 6 T-states each

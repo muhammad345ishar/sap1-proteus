@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DLD Terminal Solved</title>
+<meta name="description" content="Worked solutions to the Digital Logic Design terminal examination (1 January 2025), PIEAS BSEE.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+  :root {
+    --bg: #eef2ee; --surface: #f7faf6; --fg: #132b35; --muted: #53686d;
+    --line: #71858b; --soft: rgba(22,56,73,.18); --one: #a95600; --ctl: #087c80;
+    --display: "Big Shoulders Display", Impact, sans-serif;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0d1714; --surface: #12211c; --fg: #f1e6cc; --muted: #a5b7ad;
+      --line: #718c82; --soft: rgba(234,223,198,.18); --one: #e6a13c; --ctl: #4bc5bf; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+  main { max-width: 880px; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-left, 0px)) 64px; }
+  header { border-bottom: 2px solid var(--fg); padding-bottom: 14px; margin-bottom: 24px; }
+  h1 { font: 800 clamp(2.6rem, 8vw, 4.6rem)/.92 var(--display); text-transform: uppercase; margin: 0 0 8px; }
+  .tag { font: 600 .8rem var(--mono); color: var(--one); letter-spacing: .04em; margin: 0 0 6px; }
+  .lede { color: var(--muted); margin: 0; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 600 .85rem var(--mono); margin: 0 0 8px; }
+  nav.toc a, a { color: var(--ctl); }
+  h2 { font: 700 1.9rem/1 var(--display); text-transform: uppercase; letter-spacing: .04em; margin: 44px 0 6px;
+    border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  h3 { font: 600 1.05rem var(--body); margin: 28px 0 8px; }
+  h3 .mk { font: 600 .75rem var(--mono); color: var(--muted); margin-left: 6px; }
+  .q { color: var(--muted); font-style: italic; margin: 0 0 10px; }
+  .ans { background: var(--surface); border-left: 3px solid var(--one); padding: 10px 14px; margin: 10px 0; }
+  .note { font-size: .92rem; color: var(--muted); border-left: 3px solid var(--ctl); padding: 4px 12px; margin: 10px 0; }
+  .tw { overflow-x: auto; margin: 10px 0; }
+  table { border-collapse: collapse; font: .9rem var(--mono); min-width: max-content; }
+  th, td { border: 1px solid var(--soft); padding: 4px 10px; text-align: center; }
+  th { background: var(--surface); font-weight: 600; }
+  td.hi { color: var(--one); font-weight: 600; }
+  pre { background: var(--surface); border: 1px solid var(--soft); padding: 12px 14px; overflow-x: auto; font: .88rem/1.5 var(--mono); }
+  figure.dia { margin: 14px 0; overflow-x: auto; background: var(--surface); border: 1px solid var(--soft); border-radius: 6px; padding: 10px; }
+  figure.dia svg { display: block; width: 100%; min-width: 360px; height: auto; }
+  .gate { fill: var(--bg); stroke: var(--fg); stroke-width: 2; }
+  .wire { fill: none; stroke: var(--fg); stroke-width: 1.6; }
+  .dot { fill: var(--fg); }
+  .ah { fill: var(--fg); }
+  .blk { fill: var(--bg); stroke: var(--fg); stroke-width: 1.8; }
+  .st { fill: var(--bg); stroke: var(--ctl); stroke-width: 2.2; }
+  .grid { stroke: var(--soft); stroke-dasharray: 3 3; }
+  .wave { fill: none; stroke-width: 2; }
+  .wave.clk { stroke: var(--muted); } .wave.cnt { stroke: var(--ctl); } .wave.coil { stroke: var(--one); }
+  text { fill: var(--fg); font-family: var(--body); }
+  .lbl { font: 600 14px var(--body); } .bt { font: 600 13px var(--body); }
+  .bs { font: 12px var(--mono); fill: var(--muted); } .sig { font: 12px var(--mono); fill: var(--muted); }
+  .pin { font: 11px var(--mono); } .stl { font: 600 16px var(--mono); }
+  footer { margin-top: 48px; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="g-and" overflow="visible"><path d="M0 0H25A20 20 0 0 1 25 40H0Z"/></symbol>
+  <symbol id="g-nand" overflow="visible"><path d="M0 0H25A20 20 0 0 1 25 40H0Z"/><circle cx="49" cy="20" r="4"/></symbol>
+  <symbol id="g-or" overflow="visible"><path d="M0 0Q30 0 48 20Q30 40 0 40Q12 20 0 0Z"/></symbol>
+  <symbol id="g-xor" overflow="visible"><path d="M6 0Q36 0 54 20Q36 40 6 40Q18 20 6 0Z"/><path fill="none" d="M0 0Q12 20 0 40"/></symbol>
+  <symbol id="g-not" overflow="visible"><path d="M0 2L34 20L0 38Z"/><circle cx="38" cy="20" r="4"/></symbol>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" class="ah"/></marker>
+ </defs>
+</svg>
+<main>
+<header>
+  <p class="tag">DIGITAL LOGIC DESIGN · TERMINAL · 1 JAN 2025 · 100 MARKS</p>
+  <h1>DLD Terminal, Solved</h1>
+  <p class="lede">Worked answers to every part of the paper, with truth tables, equations, timing and state diagrams, circuits and block diagrams. Every logic answer here was checked by simulation.</p>
+</header>
+<nav class="toc"><a href="#q1">Q1</a><a href="#q2">Q2</a><a href="#q3">Q3</a><a href="#q4">Q4</a><a href="index.html">← SAP-1 index</a></nav>
+
+<h2 id="q1">Question 1</h2>
+
+<h3>(a) Truth table of a NAND gate <span class="mk">[1]</span></h3>
+<p>A NAND gate is an AND followed by a NOT: $Y = \overline{AB}$. The output is 0 only when every input is 1.</p>
+<div class="tw"><table><tr><th>A</th><th>B</th><th>Y = (AB)′</th></tr>
+<tr><td>0</td><td>0</td><td>1</td></tr><tr><td>0</td><td>1</td><td>1</td></tr>
+<tr><td>1</td><td>0</td><td>1</td></tr><tr><td>1</td><td>1</td><td class="hi">0</td></tr></table></div>
+
+<h3>(b) −11 as a 5-bit signed 2's-complement number <span class="mk">[2]</span></h3>
+<p>2's complement of a number = invert every bit (1's complement), then add 1. That works because $N + \overline{N} = 2^n - 1$, so $\overline{N} + 1 = 2^n - N$, which is how $-N$ is stored in $n$ bits.</p>
+<div class="tw"><table>
+<tr><th>Step</th><th>Bits</th></tr>
+<tr><td>+11 in 5 bits</td><td>0 1 0 1 1</td></tr>
+<tr><td>Invert (1's complement)</td><td>1 0 1 0 0</td></tr>
+<tr><td>Add 1</td><td class="hi">1 0 1 0 1</td></tr></table></div>
+<div class="ans"><b>−11 = 10101₂</b>. Check: $-16 + 4 + 1 = -11$ (the MSB weighs $-2^4$).</div>
+
+<h3>(c) Half-step stepper motor: clock, counter and coil timing, and coil equations <span class="mk">[10]</span></h3>
+<p>Half-step mode alternates between one coil and two adjacent coils energised, giving 8 steps per electrical cycle (A, AB, B, BC, C, CD, D, DA). A 3-bit binary counter $Q_2Q_1Q_0$ (0 → 7) clocks through the steps; a decoder (the equations below) turns each count into the coil pattern.</p>
+<div class="tw"><table>
+<tr><th>Clock</th><th>Q₂ Q₁ Q₀</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Energised</th></tr>
+<tr><td>S0</td><td>000</td><td class="hi">1</td><td>0</td><td>0</td><td>0</td><td>A</td></tr>
+<tr><td>S1</td><td>001</td><td class="hi">1</td><td class="hi">1</td><td>0</td><td>0</td><td>A, B</td></tr>
+<tr><td>S2</td><td>010</td><td>0</td><td class="hi">1</td><td>0</td><td>0</td><td>B</td></tr>
+<tr><td>S3</td><td>011</td><td>0</td><td class="hi">1</td><td class="hi">1</td><td>0</td><td>B, C</td></tr>
+<tr><td>S4</td><td>100</td><td>0</td><td>0</td><td class="hi">1</td><td>0</td><td>C</td></tr>
+<tr><td>S5</td><td>101</td><td>0</td><td>0</td><td class="hi">1</td><td class="hi">1</td><td>C, D</td></tr>
+<tr><td>S6</td><td>110</td><td>0</td><td>0</td><td>0</td><td class="hi">1</td><td>D</td></tr>
+<tr><td>S7</td><td>111</td><td class="hi">1</td><td>0</td><td>0</td><td class="hi">1</td><td>D, A</td></tr></table></div>
+<figure class="dia"><svg viewBox="0 0 620 312" role="img" aria-label="Half-step timing diagram"><line class="grid" x1="70" y1="18" x2="70" y2="302"/><text class="sig" x="100.0" y="14" text-anchor="middle">S0</text><line class="grid" x1="130" y1="18" x2="130" y2="302"/><text class="sig" x="160.0" y="14" text-anchor="middle">S1</text><line class="grid" x1="190" y1="18" x2="190" y2="302"/><text class="sig" x="220.0" y="14" text-anchor="middle">S2</text><line class="grid" x1="250" y1="18" x2="250" y2="302"/><text class="sig" x="280.0" y="14" text-anchor="middle">S3</text><line class="grid" x1="310" y1="18" x2="310" y2="302"/><text class="sig" x="340.0" y="14" text-anchor="middle">S4</text><line class="grid" x1="370" y1="18" x2="370" y2="302"/><text class="sig" x="400.0" y="14" text-anchor="middle">S5</text><line class="grid" x1="430" y1="18" x2="430" y2="302"/><text class="sig" x="460.0" y="14" text-anchor="middle">S6</text><line class="grid" x1="490" y1="18" x2="490" y2="302"/><text class="sig" x="520.0" y="14" text-anchor="middle">S7</text><line class="grid" x1="550" y1="18" x2="550" y2="302"/><text class="sig" x="580.0" y="14" text-anchor="middle">S0</text><text class="bt" x="8" y="50" text-anchor="start">CLK</text><polyline class="wave clk" points="70,54 70,36 100.0,36 100.0,54 130,54 130,54 130,36 160.0,36 160.0,54 190,54 190,54 190,36 220.0,36 220.0,54 250,54 250,54 250,36 280.0,36 280.0,54 310,54 310,54 310,36 340.0,36 340.0,54 370,54 370,54 370,36 400.0,36 400.0,54 430,54 430,54 430,36 460.0,36 460.0,54 490,54 490,54 490,36 520.0,36 520.0,54 550,54 550,54 550,36 580.0,36 580.0,54 610,54"/><text class="bt" x="8" y="84" text-anchor="start">Q₂</text><polyline class="wave cnt" points="70,88 130,88 130,88 190,88 190,88 250,88 250,88 310,88 310,70 370,70 370,70 430,70 430,70 490,70 490,70 550,70 550,88 610,88"/><text class="bt" x="8" y="118" text-anchor="start">Q₁</text><polyline class="wave cnt" points="70,122 130,122 130,122 190,122 190,104 250,104 250,104 310,104 310,122 370,122 370,122 430,122 430,104 490,104 490,104 550,104 550,122 610,122"/><text class="bt" x="8" y="152" text-anchor="start">Q₀</text><polyline class="wave cnt" points="70,156 130,156 130,138 190,138 190,156 250,156 250,138 310,138 310,156 370,156 370,138 430,138 430,156 490,156 490,138 550,138 550,156 610,156"/><text class="bt" x="8" y="186" text-anchor="start">A</text><polyline class="wave coil" points="70,172 130,172 130,172 190,172 190,190 250,190 250,190 310,190 310,190 370,190 370,190 430,190 430,190 490,190 490,172 550,172 550,172 610,172"/><text class="bt" x="8" y="220" text-anchor="start">B</text><polyline class="wave coil" points="70,224 130,224 130,206 190,206 190,206 250,206 250,206 310,206 310,224 370,224 370,224 430,224 430,224 490,224 490,224 550,224 550,224 610,224"/><text class="bt" x="8" y="254" text-anchor="start">C</text><polyline class="wave coil" points="70,258 130,258 130,258 190,258 190,258 250,258 250,240 310,240 310,240 370,240 370,240 430,240 430,258 490,258 490,258 550,258 550,258 610,258"/><text class="bt" x="8" y="288" text-anchor="start">D</text><polyline class="wave coil" points="70,292 130,292 130,292 190,292 190,292 250,292 250,292 310,292 310,292 370,292 370,274 430,274 430,274 490,274 490,274 550,274 550,292 610,292"/></svg></figure>
+<p>Each coil is a sum of the minterms where it is 1, then simplified (K-map / Boolean algebra):</p>
+<div class="ans">
+$$A = \sum m(0,1,7) = \overline{Q_2}\,\overline{Q_1} + Q_2Q_1Q_0$$
+$$B = \sum m(1,2,3) = \overline{Q_2}\,(Q_1 + Q_0)$$
+$$C = \sum m(3,4,5) = Q_2\overline{Q_1} + \overline{Q_2}\,Q_1Q_0$$
+$$D = \sum m(5,6,7) = Q_2\,(Q_1 + Q_0)$$
+</div>
+<p class="note">Reversing the motor = count down instead of up (same equations).</p>
+
+<h3>(d) NOT, AND and OR using only NAND gates <span class="mk">[2]</span></h3>
+<p>NOT: tie both NAND inputs together, $\overline{A\cdot A} = \overline{A}$. AND: NAND then a NAND-inverter, $\overline{\overline{AB}} = AB$. OR: invert each input then NAND (De Morgan), $\overline{\overline{A}\,\overline{B}} = A + B$.</p>
+<figure class="dia"><svg viewBox="0 0 420 240" role="img" aria-label="NOT, AND and OR built from NAND gates"><text class="bt" x="10" y="18" text-anchor="start">NOT</text><text class="lbl" x="6" y="64" text-anchor="start">A</text><polyline class="wire" points="20,60 40,60"/><circle class="dot" cx="40" cy="60" r="3"/><polyline class="wire" points="40,60 40,50 60,50"/><polyline class="wire" points="40,60 40,70 60,70"/><use href="#g-nand" x="60" y="40" class="gate"/><polyline class="wire" points="113,60 135,60"/><text class="lbl" x="140" y="64" text-anchor="start">A′</text><text class="bt" x="190" y="18" text-anchor="start">AND</text><text class="lbl" x="186" y="54" text-anchor="start">A</text><polyline class="wire" points="200,50 220,50"/><text class="lbl" x="186" y="74" text-anchor="start">B</text><polyline class="wire" points="200,70 220,70"/><use href="#g-nand" x="220" y="40" class="gate"/><polyline class="wire" points="273,60 290,60"/><circle class="dot" cx="290" cy="60" r="3"/><polyline class="wire" points="290,60 290,50 305,50"/><polyline class="wire" points="290,60 290,70 305,70"/><use href="#g-nand" x="305" y="40" class="gate"/><polyline class="wire" points="358,60 375,60"/><text class="lbl" x="380" y="64" text-anchor="start">AB</text><text class="sig" x="262" y="40" text-anchor="start">(AB)′</text><text class="bt" x="10" y="120" text-anchor="start">OR</text><text class="lbl" x="6" y="154" text-anchor="start">A</text><polyline class="wire" points="20,150 35,150"/><circle class="dot" cx="35" cy="150" r="3"/><polyline class="wire" points="35,150 35,140 50,140"/><polyline class="wire" points="35,150 35,160 50,160"/><use href="#g-nand" x="50" y="130" class="gate"/><polyline class="wire" points="103,150 140,150 140,175 160,175"/><text class="sig" x="108" y="145" text-anchor="start">A′</text><text class="lbl" x="6" y="214" text-anchor="start">B</text><polyline class="wire" points="20,210 35,210"/><circle class="dot" cx="35" cy="210" r="3"/><polyline class="wire" points="35,210 35,200 50,200"/><polyline class="wire" points="35,210 35,220 50,220"/><use href="#g-nand" x="50" y="190" class="gate"/><polyline class="wire" points="103,210 140,210 140,195 160,195"/><text class="sig" x="108" y="225" text-anchor="start">B′</text><use href="#g-nand" x="160" y="165" class="gate"/><polyline class="wire" points="213,185 235,185"/><text class="lbl" x="240" y="189" text-anchor="start">(A′B′)′ = A + B</text></svg></figure>
+
+<h2 id="q2">Question 2</h2>
+
+<h3>(a) Analyse the combinational circuit with a table <span class="mk">[5]</span></h3>
+<p>Reading the figure: an AND gate takes A, B; an OR gate takes B, C; a second AND takes B, C; a third AND combines the OR and AND outputs; a final OR combines that with the AB gate.</p>
+<figure class="dia"><svg viewBox="0 0 430 210" role="img" aria-label="Q2a circuit with intermediate signals labelled"><text class="lbl" x="10" y="34" text-anchor="start">A</text><polyline class="wire" points="25,30 120,30"/><text class="lbl" x="10" y="64" text-anchor="start">B</text><polyline class="wire" points="25,60 60,60 60,50 120,50"/><circle class="dot" cx="60" cy="60" r="3"/><polyline class="wire" points="60,60 60,110 120,110"/><polyline class="wire" points="60,110 60,170 120,170"/><circle class="dot" cx="60" cy="110" r="3"/><text class="lbl" x="10" y="134" text-anchor="start">C</text><polyline class="wire" points="25,130 120,130"/><circle class="dot" cx="85" cy="130" r="3"/><polyline class="wire" points="85,130 85,190 120,190"/><use href="#g-and" x="120" y="20" class="gate"/><text class="sig" x="170" y="32" text-anchor="start">X₁ = AB</text><use href="#g-or" x="120" y="100" class="gate"/><polyline class="wire" points="168,120 210,120 210,135 235,135"/><text class="sig" x="172" y="114" text-anchor="start">X₂ = B+C</text><use href="#g-and" x="120" y="160" class="gate"/><polyline class="wire" points="165,180 210,180 210,155 235,155"/><text class="sig" x="172" y="196" text-anchor="start">X₃ = BC</text><use href="#g-and" x="235" y="125" class="gate"/><polyline class="wire" points="280,145 300,145 300,90 330,90"/><text class="sig" x="284" y="165" text-anchor="start">X₄ = X₂X₃</text><polyline class="wire" points="165,40 300,40 300,70 330,70"/><use href="#g-or" x="330" y="60" class="gate"/><polyline class="wire" points="378,80 400,80"/><text class="lbl" x="404" y="84" text-anchor="start">Q</text></svg></figure>
+<div class="tw"><table>
+<tr><th>A</th><th>B</th><th>C</th><th>X₁=AB</th><th>X₂=B+C</th><th>X₃=BC</th><th>X₄=X₂X₃</th><th>Q=X₁+X₄</th></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>1</td><td>1</td><td class="hi">1</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td class="hi">1</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td class="hi">1</td></tr></table></div>
+<div class="ans">$$Q = AB + (B+C)\,BC = AB + BC \;(\text{absorption: }(B+C)BC = BC) = B\,(A + C)$$
+So $Q = \sum m(3,6,7)$: the output is 1 when B is 1 together with A or C.</div>
+
+<h3>(b) Analyse the sequential circuit <span class="mk">[10]</span></h3>
+<p>This is Mano's Example 5.1 circuit: two D flip-flops A and B, input x, output y. (In a D flip-flop the next state equals the D input: $Q(t+1) = D$.)</p>
+<p><b>Step 1 – Input (excitation) equations and output equation</b>, read off the gates:</p>
+<div class="ans">$$D_A = Ax + Bx,\qquad D_B = \overline{A}\,x,\qquad y = (A + B)\,\overline{x}$$</div>
+<p><b>Step 2 – State equations</b> (substitute $Q(t+1)=D$): $A(t+1) = Ax + Bx$, $B(t+1) = \overline{A}x$.</p>
+<p><b>Step 3 – State table</b>:</p>
+<div class="tw"><table>
+<tr><th colspan="2">Present</th><th>Input</th><th colspan="2">Next</th><th>Output</th></tr>
+<tr><th>A</th><th>B</th><th>x</th><th>A</th><th>B</th><th>y</th></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="hi">1</td></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="hi">1</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="hi">1</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td></tr></table></div>
+<p><b>Step 4 – State diagram</b> (Mealy machine, because y depends on the input x as well as the state):</p>
+<figure class="dia"><svg viewBox="0 0 410 320" role="img" aria-label="State diagram, states AB, edges labelled x/y"><circle class="st" cx="90" cy="70" r="30"/><text class="stl" x="90" y="76" text-anchor="middle">00</text><circle class="st" cx="330" cy="70" r="30"/><text class="stl" x="330" y="76" text-anchor="middle">01</text><circle class="st" cx="330" cy="250" r="30"/><text class="stl" x="330" y="256" text-anchor="middle">11</text><circle class="st" cx="90" cy="250" r="30"/><text class="stl" x="90" y="256" text-anchor="middle">10</text><path class="wire" marker-end="url(#arr)" d="M118 58 Q210 20 302 58"/><text class="sig" x="210" y="32" text-anchor="middle">1/0</text><path class="wire" marker-end="url(#arr)" d="M302 82 Q210 118 118 82"/><text class="sig" x="210" y="116" text-anchor="middle">0/1</text><polyline class="wire" marker-end="url(#arr)" points="330,100 330,218"/><text class="sig" x="338" y="165" text-anchor="start">1/0</text><polyline class="wire" marker-end="url(#arr)" points="308,230 112,92"/><text class="sig" x="230" y="178" text-anchor="middle">0/1</text><polyline class="wire" marker-end="url(#arr)" points="300,250 122,250"/><text class="sig" x="210" y="270" text-anchor="middle">1/0</text><polyline class="wire" marker-end="url(#arr)" points="90,220 90,102"/><text class="sig" x="82" y="165" text-anchor="end">0/1</text><path class="wire" marker-end="url(#arr)" d="M68 50 C30 0 0 60 60 72"/><text class="sig" x="18" y="26" text-anchor="middle">0/0</text><path class="wire" marker-end="url(#arr)" d="M68 270 C30 320 0 260 60 248"/><text class="sig" x="18" y="300" text-anchor="middle">1/0</text><text class="sig" x="400" y="310" text-anchor="end">label = x / y</text></svg></figure>
+<div class="ans"><b>Function:</b> while x = 1 the machine moves 00 → 01 → 11 → 10 and stays at 10; when x returns to 0 it goes back to 00 and outputs y = 1 if it had left 00. So y = 1 flags "x was 1 and has just dropped to 0" (end of a run of 1s).</div>
+<p class="note">The scan is faint; it was read as the standard figure. If your copy wires a gate differently, redo steps 1–4 with the same method.</p>
+
+<h2 id="q3">Question 3</h2>
+
+<h3>(a) Full subtractor: truth table, equations and logic diagram <span class="mk">[4]</span></h3>
+<p>A full subtractor computes $A - B - B_{in}$, where $B_{in}$ is the borrow from the lower stage. D is the difference bit; $B_{out}$ is 1 when the stage had to borrow (result negative).</p>
+<div class="tw"><table>
+<tr><th>A</th><th>B</th><th>B<sub>in</sub></th><th>D</th><th>B<sub>out</sub></th></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr></table></div>
+<div class="ans">
+$$D = \sum m(1,2,4,7) = A \oplus B \oplus B_{in}$$
+$$B_{out} = \sum m(1,2,3,7) = \overline{A}B + \overline{A}B_{in} + BB_{in}$$
+</div>
+<figure class="dia"><svg viewBox="0 0 440 290" role="img" aria-label="Full subtractor logic diagram"><text class="lbl" x="4" y="34" text-anchor="start">A</text><text class="lbl" x="4" y="64" text-anchor="start">B</text><text class="lbl" x="4" y="94" text-anchor="start">B<tspan baseline-shift='sub' font-size='70%'>in</tspan></text><polyline class="wire" points="30,30 60,30"/><circle class="dot" cx="60" cy="30" r="3"/><polyline class="wire" points="60,30 60,40 110,40"/><polyline class="wire" points="30,60 75,60"/><circle class="dot" cx="75" cy="60" r="3"/><polyline class="wire" points="75,60 110,60"/><polyline class="wire" points="30,90 90,90"/><circle class="dot" cx="90" cy="90" r="3"/><polyline class="wire" points="90,90 90,70 190,70"/><use href="#g-xor" x="110" y="30" class="gate"/><polyline class="wire" points="164,50 175,50 175,50"/><polyline class="wire" points="175,50 190,50"/><text class="sig" x="160" y="26" text-anchor="start">A⊕B</text><use href="#g-xor" x="190" y="40" class="gate"/><polyline class="wire" points="244,60 380,60"/><text class="lbl" x="384" y="64" text-anchor="start">D</text><polyline class="wire" points="60,30 60,115 105,115"/><use href="#g-not" x="105" y="95" class="gate"/><polyline class="wire" points="147,115 165,115"/><circle class="dot" cx="165" cy="115" r="3"/><text class="sig" x="150" y="108" text-anchor="start">A′</text><polyline class="wire" points="165,115 165,130 200,130"/><polyline class="wire" points="75,60 75,150 200,150"/><use href="#g-and" x="200" y="120" class="gate"/><circle class="dot" cx="165" cy="130" r="3"/><polyline class="wire" points="165,130 165,190 200,190"/><polyline class="wire" points="90,90 90,210 200,210"/><use href="#g-and" x="200" y="180" class="gate"/><circle class="dot" cx="75" cy="150" r="3"/><polyline class="wire" points="75,150 75,250 200,250"/><circle class="dot" cx="90" cy="210" r="3"/><polyline class="wire" points="90,210 90,270 200,270"/><use href="#g-and" x="200" y="240" class="gate"/><polyline class="wire" points="245,140 290,140 290,185 305,185"/><polyline class="wire" points="245,200 305,200"/><polyline class="wire" points="245,260 290,260 290,215 305,215"/><g class="gate"><path d="M300 175Q336 175 356 200Q336 225 300 225Q314 200 300 175Z"/></g><polyline class="wire" points="356,200 380,200"/><text class="lbl" x="384" y="204" text-anchor="start">B<tspan baseline-shift='sub' font-size='70%'>out</tspan></text></svg></figure>
+
+<h3>(b) HDL module for the half subtractor <span class="mk">[6]</span></h3>
+<p>Half subtractor: $D = A \oplus B$, $B_{out} = \overline{A}B$.</p>
+<pre>// Verilog - dataflow (equation) description
+module half_subtractor (
+    input  wire A, B,
+    output wire D, Bout
+);
+    assign D    = A ^ B;     // difference
+    assign Bout = ~A &amp; B;    // borrow
+endmodule
+
+// Gate-level version of the same circuit
+module half_subtractor_gates (input A, B, output D, Bout);
+    wire An;
+    xor g1 (D, A, B);
+    not g2 (An, A);
+    and g3 (Bout, An, B);
+endmodule</pre>
+
+<h3>(c) JK flip-flop sequence generator for the half-step controller, with reset to 1000 <span class="mk">[20]</span></h3>
+<p>Use four JK flip-flops whose outputs drive coils A, B, C, D directly, so the state <i>is</i> the coil pattern. Required sequence:</p>
+<p style="font-family:var(--mono)">1000 → 1100 → 0100 → 0110 → 0010 → 0011 → 0001 → 1001 → (back to 1000)</p>
+<p><b>JK excitation table</b> (what J, K must be for each wanted change; X = don't care):</p>
+<div class="tw"><table><tr><th>Q → Q⁺</th><th>J</th><th>K</th></tr>
+<tr><td>0 → 0</td><td>0</td><td>X</td></tr><tr><td>0 → 1</td><td>1</td><td>X</td></tr>
+<tr><td>1 → 0</td><td>X</td><td>1</td></tr><tr><td>1 → 1</td><td>X</td><td>0</td></tr></table></div>
+<p>It comes from the JK characteristic equation $Q^+ = J\overline{Q} + \overline{K}Q$: if Q = 0 only J matters; if Q = 1 only K matters.</p>
+<p><b>Transition / excitation table</b> (the 8 unused states are don't-cares):</p>
+<div class="tw"><table>
+<tr><th>A B C D</th><th>A⁺B⁺C⁺D⁺</th><th>J<sub>A</sub>K<sub>A</sub></th><th>J<sub>B</sub>K<sub>B</sub></th><th>J<sub>C</sub>K<sub>C</sub></th><th>J<sub>D</sub>K<sub>D</sub></th></tr>
+<tr><td>1000</td><td>1100</td><td>X0</td><td>1X</td><td>0X</td><td>0X</td></tr>
+<tr><td>1100</td><td>0100</td><td>X1</td><td>X0</td><td>0X</td><td>0X</td></tr>
+<tr><td>0100</td><td>0110</td><td>0X</td><td>X0</td><td>1X</td><td>0X</td></tr>
+<tr><td>0110</td><td>0010</td><td>0X</td><td>X1</td><td>X0</td><td>0X</td></tr>
+<tr><td>0010</td><td>0011</td><td>0X</td><td>0X</td><td>X0</td><td>1X</td></tr>
+<tr><td>0011</td><td>0001</td><td>0X</td><td>0X</td><td>X1</td><td>X0</td></tr>
+<tr><td>0001</td><td>1001</td><td>1X</td><td>0X</td><td>0X</td><td>X0</td></tr>
+<tr><td>1001</td><td>1000</td><td>X0</td><td>0X</td><td>0X</td><td>X1</td></tr></table></div>
+<p><b>Simplify each column</b> (4-variable K-maps with the 8 unused states as X). For example, $J_A$ is 1 only at 0001 and 0 at 0100, 0110, 0010, 0011, so $\overline{C}D$ covers the 1 without touching any 0; $K_A$ is 1 at 1100 and 0 at 1000, 1001, so $K_A = B$. The others follow the same way:</p>
+<div class="ans">
+$$J_A = \overline{C}D,\quad K_A = B \qquad J_B = A\overline{D},\quad K_B = C$$
+$$J_C = \overline{A}B,\quad K_C = D \qquad J_D = \overline{B}C,\quad K_D = A$$
+Neat pattern: each coil turns on when the coil before it is on and the one behind that is off, and turns off once the next coil is on.</div>
+<p><b>Reset to 1000:</b> PRESET′ and CLEAR′ are active-low asynchronous inputs (they act immediately, ignoring the clock). A push-button pulls the RST′ line low (10 kΩ pull-up keeps it high otherwise). RST′ goes to <b>PRESET′ of FF-A</b> (A = 1) and to <b>CLEAR′ of FF-B, FF-C, FF-D</b> (B = C = D = 0). The unused PRE′/CLR′ pins are tied to +5 V.</p>
+<figure class="dia"><svg viewBox="0 0 900 270" role="img" aria-label="JK flip-flop half-step sequence generator with reset switch"><rect class="blk" x="80" y="90" width="70" height="110" rx="4"/><text class="bt" x="115" y="140" text-anchor="middle">FF-A</text><text class="pin" x="86" y="120" text-anchor="start">J</text><text class="pin" x="86" y="180" text-anchor="start">K</text><text class="pin" x="144" y="120" text-anchor="end">Q</text><text class="pin" x="144" y="180" text-anchor="end">Q′</text><path class="wire" d="M80 142 l8 8 l-8 8"/><text class="pin" x="92" y="154" text-anchor="start">CLK</text><text class="pin" x="115" y="104" text-anchor="middle">PRE′</text><text class="pin" x="115" y="194" text-anchor="middle">CLR′</text><use href="#g-and" class="gate" transform="translate(32 102) scale(.6)"/><text class="sig" x="28" y="112" text-anchor="end">C′</text><polyline class="wire" points="28,108 32,108"/><text class="sig" x="28" y="128" text-anchor="end">D</text><polyline class="wire" points="28,120 32,120"/><polyline class="wire" points="59,114 80,114"/><polyline class="wire" points="50,174 80,174"/><text class="sig" x="46" y="178" text-anchor="end">B</text><polyline class="wire" points="150,114 170,114"/><text class="bt" x="174" y="118" text-anchor="start">A</text><polyline class="wire" points="150,174 170,174"/><text class="sig" x="174" y="178" text-anchor="start">A′</text><polyline class="wire" points="80,150 70,150 70,240"/><circle class="dot" cx="70" cy="240" r="3"/><polyline class="wire" points="115,90 115,60"/><polyline class="wire" points="115,200 115,212"/><circle class="dot" cx="115" cy="60" r="3"/><text class="sig" x="122" y="222" text-anchor="start">+5V</text><rect class="blk" x="270" y="90" width="70" height="110" rx="4"/><text class="bt" x="305" y="140" text-anchor="middle">FF-B</text><text class="pin" x="276" y="120" text-anchor="start">J</text><text class="pin" x="276" y="180" text-anchor="start">K</text><text class="pin" x="334" y="120" text-anchor="end">Q</text><text class="pin" x="334" y="180" text-anchor="end">Q′</text><path class="wire" d="M270 142 l8 8 l-8 8"/><text class="pin" x="282" y="154" text-anchor="start">CLK</text><text class="pin" x="305" y="104" text-anchor="middle">PRE′</text><text class="pin" x="305" y="194" text-anchor="middle">CLR′</text><use href="#g-and" class="gate" transform="translate(222 102) scale(.6)"/><text class="sig" x="218" y="112" text-anchor="end">A</text><polyline class="wire" points="218,108 222,108"/><text class="sig" x="218" y="128" text-anchor="end">D′</text><polyline class="wire" points="218,120 222,120"/><polyline class="wire" points="249,114 270,114"/><polyline class="wire" points="240,174 270,174"/><text class="sig" x="236" y="178" text-anchor="end">C</text><polyline class="wire" points="340,114 360,114"/><text class="bt" x="364" y="118" text-anchor="start">B</text><polyline class="wire" points="340,174 360,174"/><text class="sig" x="364" y="178" text-anchor="start">B′</text><polyline class="wire" points="270,150 260,150 260,240"/><circle class="dot" cx="260" cy="240" r="3"/><polyline class="wire" points="305,90 305,62"/><polyline class="wire" points="305,200 305,225"/><circle class="dot" cx="305" cy="225" r="3"/><text class="sig" x="305" y="54" text-anchor="middle">+5V</text><rect class="blk" x="460" y="90" width="70" height="110" rx="4"/><text class="bt" x="495" y="140" text-anchor="middle">FF-C</text><text class="pin" x="466" y="120" text-anchor="start">J</text><text class="pin" x="466" y="180" text-anchor="start">K</text><text class="pin" x="524" y="120" text-anchor="end">Q</text><text class="pin" x="524" y="180" text-anchor="end">Q′</text><path class="wire" d="M460 142 l8 8 l-8 8"/><text class="pin" x="472" y="154" text-anchor="start">CLK</text><text class="pin" x="495" y="104" text-anchor="middle">PRE′</text><text class="pin" x="495" y="194" text-anchor="middle">CLR′</text><use href="#g-and" class="gate" transform="translate(412 102) scale(.6)"/><text class="sig" x="408" y="112" text-anchor="end">A′</text><polyline class="wire" points="408,108 412,108"/><text class="sig" x="408" y="128" text-anchor="end">B</text><polyline class="wire" points="408,120 412,120"/><polyline class="wire" points="439,114 460,114"/><polyline class="wire" points="430,174 460,174"/><text class="sig" x="426" y="178" text-anchor="end">D</text><polyline class="wire" points="530,114 550,114"/><text class="bt" x="554" y="118" text-anchor="start">C</text><polyline class="wire" points="530,174 550,174"/><text class="sig" x="554" y="178" text-anchor="start">C′</text><polyline class="wire" points="460,150 450,150 450,240"/><circle class="dot" cx="450" cy="240" r="3"/><polyline class="wire" points="495,90 495,62"/><polyline class="wire" points="495,200 495,225"/><circle class="dot" cx="495" cy="225" r="3"/><text class="sig" x="495" y="54" text-anchor="middle">+5V</text><rect class="blk" x="650" y="90" width="70" height="110" rx="4"/><text class="bt" x="685" y="140" text-anchor="middle">FF-D</text><text class="pin" x="656" y="120" text-anchor="start">J</text><text class="pin" x="656" y="180" text-anchor="start">K</text><text class="pin" x="714" y="120" text-anchor="end">Q</text><text class="pin" x="714" y="180" text-anchor="end">Q′</text><path class="wire" d="M650 142 l8 8 l-8 8"/><text class="pin" x="662" y="154" text-anchor="start">CLK</text><text class="pin" x="685" y="104" text-anchor="middle">PRE′</text><text class="pin" x="685" y="194" text-anchor="middle">CLR′</text><use href="#g-and" class="gate" transform="translate(602 102) scale(.6)"/><text class="sig" x="598" y="112" text-anchor="end">B′</text><polyline class="wire" points="598,108 602,108"/><text class="sig" x="598" y="128" text-anchor="end">C</text><polyline class="wire" points="598,120 602,120"/><polyline class="wire" points="629,114 650,114"/><polyline class="wire" points="620,174 650,174"/><text class="sig" x="616" y="178" text-anchor="end">A</text><polyline class="wire" points="720,114 740,114"/><text class="bt" x="744" y="118" text-anchor="start">D</text><polyline class="wire" points="720,174 740,174"/><text class="sig" x="744" y="178" text-anchor="start">D′</text><polyline class="wire" points="650,150 640,150 640,240"/><circle class="dot" cx="640" cy="240" r="3"/><polyline class="wire" points="685,90 685,62"/><polyline class="wire" points="685,200 685,225"/><circle class="dot" cx="685" cy="225" r="3"/><text class="sig" x="685" y="54" text-anchor="middle">+5V</text><polyline class="wire" points="40,240 720,240"/><text class="sig" x="40" y="256" text-anchor="start">CLOCK (common to all four)</text><polyline class="wire" points="115,60 115,40 790,40 790,225 265,225"/><text class="sig" x="450" y="34" text-anchor="middle">RST′ → PRE′ of FF-A</text><text class="sig" x="860" y="256" text-anchor="end">RST′ → CLR′ of FF-B, C, D</text><polyline class="wire" points="790,40 790,10 810,10"/><rect class="blk" x="810" y="2" width="36" height="16" rx="2"/><text class="pin" x="828" y="14" text-anchor="middle">10k</text><polyline class="wire" points="846,10 860,10"/><text class="sig" x="864" y="14" text-anchor="start">+5V</text><polyline class="wire" points="790,120 820,120 832,108"/><polyline class="wire" points="838,120 860,120 860,150"/><line class="wire" x1="848" y1="150" x2="872" y2="150"/><line class="wire" x1="852" y1="155" x2="868" y2="155"/><line class="wire" x1="856" y1="160" x2="864" y2="160"/><circle class="dot" cx="790" cy="120" r="3"/><text class="sig" x="835" y="100" text-anchor="middle">RESET (push)</text></svg></figure>
+<p class="note"><b>Why the reset is essential:</b> simulating all 16 states shows 0000 is a lock-up state (all J = 0, so it never leaves), and 0101, 1010, 1111 fall into it. The other unused states (0111, 1011, 1101, 1110) rejoin the sequence in one clock. So at power-up the reset switch must be pressed to start from 1000.</p>
+
+<h3>(d) Universal shift register: block diagram and function table <span class="mk">[5]</span></h3>
+<p>A universal shift register can hold, shift right, shift left and parallel-load, chosen by two mode-select lines $S_1S_0$ (each bit drives a 4-to-1 mux in front of every flip-flop). The 74194 is the standard 4-bit IC.</p>
+<figure class="dia"><svg viewBox="0 0 520 275" role="img" aria-label="Universal shift register block diagram"><rect class="blk" x="150" y="60" width="220" height="130" rx="6"/><text class="bt" x="260.0" y="122.0" text-anchor="middle">4-bit Universal</text><text class="bs" x="260.0" y="138.0" text-anchor="middle">Shift Register (74194)</text><polyline class="wire" marker-end="url(#arr)" points="180,20 180,60"/><text class="sig" x="180" y="14" text-anchor="middle">I0</text><polyline class="wire" marker-end="url(#arr)" points="180,190 180,232"/><text class="sig" x="180" y="248" text-anchor="middle">A0</text><polyline class="wire" marker-end="url(#arr)" points="235,20 235,60"/><text class="sig" x="235" y="14" text-anchor="middle">I1</text><polyline class="wire" marker-end="url(#arr)" points="235,190 235,232"/><text class="sig" x="235" y="248" text-anchor="middle">A1</text><polyline class="wire" marker-end="url(#arr)" points="290,20 290,60"/><text class="sig" x="290" y="14" text-anchor="middle">I2</text><polyline class="wire" marker-end="url(#arr)" points="290,190 290,232"/><text class="sig" x="290" y="248" text-anchor="middle">A2</text><polyline class="wire" marker-end="url(#arr)" points="345,20 345,60"/><text class="sig" x="345" y="14" text-anchor="middle">I3</text><polyline class="wire" marker-end="url(#arr)" points="345,190 345,232"/><text class="sig" x="345" y="248" text-anchor="middle">A3</text><polyline class="wire" marker-end="url(#arr)" points="20,85 150,85"/><text class="sig" x="20" y="79" text-anchor="start">Serial in (shift-right)</text><polyline class="wire" marker-end="url(#arr)" points="500,85 370,85"/><text class="sig" x="500" y="79" text-anchor="end">Serial in (shift-left)</text><polyline class="wire" marker-end="url(#arr)" points="20,120 150,120"/><text class="sig" x="20" y="114" text-anchor="start">S₁</text><polyline class="wire" marker-end="url(#arr)" points="20,145 150,145"/><text class="sig" x="20" y="139" text-anchor="start">S₀</text><polyline class="wire" marker-end="url(#arr)" points="20,172 150,172"/><text class="sig" x="20" y="166" text-anchor="start">CLK</text><polyline class="wire" marker-end="url(#arr)" points="500,150 370,150"/><text class="sig" x="500" y="144" text-anchor="end">Clear′</text><text class="sig" x="260" y="268" text-anchor="middle">Parallel inputs on top, parallel outputs below</text></svg></figure>
+<div class="tw"><table>
+<tr><th>Clear′</th><th>S₁</th><th>S₀</th><th>Operation on clock edge</th></tr>
+<tr><td>0</td><td>X</td><td>X</td><td>Clear all outputs to 0 (asynchronous)</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>No change (hold)</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>Shift right (serial-right input enters A₃ side → toward A₀)</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>Shift left (serial-left input enters the other end)</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>Parallel load I₃..I₀ → A₃..A₀</td></tr></table></div>
+
+<h3>(e) 8-bit comparator from 4-bit comparator modules <span class="mk">[5]</span></h3>
+<p>The 7485 compares two 4-bit numbers and has cascade inputs for a lower stage. The high nibble decides unless it is equal; then the low nibble decides. Feed the low stage's outputs into the high stage's cascade inputs, and give the low stage "equal" (A=B = 1, others 0) as its cascade input.</p>
+<figure class="dia"><svg viewBox="0 0 670 235" role="img" aria-label="8-bit comparator from two 7485s"><rect class="blk" x="120" y="70" width="170" height="120" rx="6"/><text class="bt" x="205.0" y="127.0" text-anchor="middle">7485 (LOW)</text><text class="bs" x="205.0" y="143.0" text-anchor="middle">A₃..A₀ vs B₃..B₀</text><rect class="blk" x="400" y="70" width="170" height="120" rx="6"/><text class="bt" x="485.0" y="127.0" text-anchor="middle">7485 (HIGH)</text><text class="bs" x="485.0" y="143.0" text-anchor="middle">A₇..A₄ vs B₇..B₄</text><polyline class="wire" marker-end="url(#arr)" points="170,24 170,70"/><text class="sig" x="170" y="16" text-anchor="middle">A₃..A₀</text><polyline class="wire" marker-end="url(#arr)" points="240,24 240,70"/><text class="sig" x="240" y="16" text-anchor="middle">B₃..B₀</text><polyline class="wire" marker-end="url(#arr)" points="450,24 450,70"/><text class="sig" x="450" y="16" text-anchor="middle">A₇..A₄</text><polyline class="wire" marker-end="url(#arr)" points="520,24 520,70"/><text class="sig" x="520" y="16" text-anchor="middle">B₇..B₄</text><polyline class="wire" marker-end="url(#arr)" points="90,100 120,100"/><text class="sig" x="86" y="104" text-anchor="end">I(A&gt;B) = 0</text><polyline class="wire" marker-end="url(#arr)" points="90,130 120,130"/><text class="sig" x="86" y="134" text-anchor="end">I(A=B) = 1</text><polyline class="wire" marker-end="url(#arr)" points="90,160 120,160"/><text class="sig" x="86" y="164" text-anchor="end">I(A&lt;B) = 0</text><polyline class="wire" marker-end="url(#arr)" points="290,100 400,100"/><text class="sig" x="345" y="96" text-anchor="middle">A&gt;B</text><polyline class="wire" marker-end="url(#arr)" points="570,100 610,100"/><text class="bt" x="614" y="104" text-anchor="start">A&gt;B</text><polyline class="wire" marker-end="url(#arr)" points="290,130 400,130"/><text class="sig" x="345" y="126" text-anchor="middle">A=B</text><polyline class="wire" marker-end="url(#arr)" points="570,130 610,130"/><text class="bt" x="614" y="134" text-anchor="start">A=B</text><polyline class="wire" marker-end="url(#arr)" points="290,160 400,160"/><text class="sig" x="345" y="156" text-anchor="middle">A&lt;B</text><polyline class="wire" marker-end="url(#arr)" points="570,160 610,160"/><text class="bt" x="614" y="164" text-anchor="start">A&lt;B</text><text class="sig" x="10" y="220" text-anchor="start">Low stage cascade inputs fixed at 'equal'; high stage's outputs are the 8-bit result</text></svg></figure>
+<p>If the 4-bit modules have <b>no</b> cascade inputs, combine them with gates (H = high nibble, L = low nibble):</p>
+<div class="ans">$$(A>B) = G_H + E_H G_L,\qquad (A=B) = E_H E_L,\qquad (A<B) = L_H + E_H L_L$$
+(2 AND + 1 OR for each of the two inequality outputs, 1 AND for equality.)</div>
+
+<h2 id="q4">Question 4</h2>
+
+<h3>(a) PWM generator block diagram <span class="mk">[15]</span></h3>
+<p>A free-running counter sets the base frequency; one register holds the period, another the on-time. A comparator resets the counter at the end of each period, and a second comparator keeps the output high while the count is below the duty value.</p>
+<figure class="dia"><svg viewBox="0 0 710 345" role="img" aria-label="PWM generator block diagram"><rect class="blk" x="10" y="20" width="150" height="50" rx="6"/><text class="bt" x="85.0" y="42.0" text-anchor="middle">Data bus / CPU</text><text class="bs" x="85.0" y="58.0" text-anchor="middle">D[N−1:0], WR_P, WR_D</text><rect class="blk" x="220" y="20" width="170" height="50" rx="6"/><text class="bt" x="305.0" y="42.0" text-anchor="middle">PERIOD register</text><text class="bs" x="305.0" y="58.0" text-anchor="middle">N-bit (74HC273)</text><rect class="blk" x="220" y="120" width="170" height="50" rx="6"/><text class="bt" x="305.0" y="142.0" text-anchor="middle">DUTY register</text><text class="bs" x="305.0" y="158.0" text-anchor="middle">N-bit (74HC273)</text><rect class="blk" x="10" y="240" width="150" height="50" rx="6"/><text class="bt" x="85.0" y="262.0" text-anchor="middle">Clock oscillator</text><text class="bs" x="85.0" y="278.0" text-anchor="middle">f_CLK</text><rect class="blk" x="220" y="235" width="170" height="60" rx="6"/><text class="bt" x="305.0" y="262.0" text-anchor="middle">N-bit counter</text><text class="bs" x="305.0" y="278.0" text-anchor="middle">74HC163 (sync CLR′)</text><rect class="blk" x="470" y="15" width="150" height="60" rx="6"/><text class="bt" x="545.0" y="42.0" text-anchor="middle">Comparator-1</text><text class="bs" x="545.0" y="58.0" text-anchor="middle">CNT = PERIOD</text><rect class="blk" x="470" y="120" width="150" height="60" rx="6"/><text class="bt" x="545.0" y="147.0" text-anchor="middle">Comparator-2</text><text class="bs" x="545.0" y="163.0" text-anchor="middle">CNT &lt; DUTY</text><rect class="blk" x="470" y="240" width="150" height="50" rx="6"/><text class="bt" x="545.0" y="262.0" text-anchor="middle">Output D-FF</text><text class="bs" x="545.0" y="278.0" text-anchor="middle">(74HC74)</text><polyline class="wire" marker-end="url(#arr)" points="160,45 220,45"/><text class="sig" x="190" y="38" text-anchor="middle">D, WR_P</text><polyline class="wire" marker-end="url(#arr)" points="85,70 85,145 220,145"/><text class="sig" x="150" y="138" text-anchor="middle">D, WR_D</text><polyline class="wire" marker-end="url(#arr)" points="160,265 220,265"/><text class="sig" x="190" y="258" text-anchor="middle">CLK</text><polyline class="wire" marker-end="url(#arr)" points="390,45 470,45"/><text class="sig" x="430" y="38" text-anchor="middle">P[N−1:0]</text><polyline class="wire" marker-end="url(#arr)" points="390,145 470,145"/><text class="sig" x="430" y="138" text-anchor="middle">Dty[N−1:0]</text><polyline class="wire" marker-end="url(#arr)" points="390,265 430,265 430,65 470,65"/><circle class="dot" cx="430" cy="170" r="3"/><polyline class="wire" marker-end="url(#arr)" points="430,170 470,170"/><text class="sig" x="436" y="225" text-anchor="start">CNT</text><polyline class="wire" marker-end="url(#arr)" points="545,180 545,240"/><text class="sig" x="552" y="214" text-anchor="start">LT</text><polyline class="wire" marker-end="url(#arr)" points="440,280 470,280"/><text class="sig" x="436" y="284" text-anchor="end">CLK</text><polyline class="wire" marker-end="url(#arr)" points="620,45 660,45 660,320 305,320 305,295"/><text class="sig" x="480" y="334" text-anchor="middle">TC (EQ) → counter CLR′</text><polyline class="wire" marker-end="url(#arr)" points="620,265 700,265"/><text class="sig" x="664" y="258" text-anchor="middle">PWM_OUT</text></svg></figure>
+<div class="tw"><table>
+<tr><th>Signal</th><th>Width / type</th><th>From → To</th><th>Meaning</th></tr>
+<tr><td>CLK</td><td>1-bit</td><td>Oscillator → counter, output FF</td><td>Base timing clock, period $T_{clk}$</td></tr>
+<tr><td>D[N−1:0]</td><td>N-bit bus</td><td>CPU → registers</td><td>Value to store</td></tr>
+<tr><td>WR_P / WR_D</td><td>1-bit strobe</td><td>CPU → PERIOD / DUTY reg</td><td>Load the bus into that register</td></tr>
+<tr><td>P[N−1:0]</td><td>N-bit</td><td>PERIOD reg → Comparator-1</td><td>Last count of a cycle</td></tr>
+<tr><td>Dty[N−1:0]</td><td>N-bit</td><td>DUTY reg → Comparator-2</td><td>Number of clocks the output stays high</td></tr>
+<tr><td>CNT[N−1:0]</td><td>N-bit</td><td>Counter → both comparators</td><td>Present count, 0 … P</td></tr>
+<tr><td>TC (EQ)</td><td>1-bit</td><td>Comparator-1 → counter CLR′ (sync)</td><td>CNT = P: restart from 0 on next clock</td></tr>
+<tr><td>LT</td><td>1-bit</td><td>Comparator-2 → output FF D</td><td>1 while CNT &lt; Dty</td></tr>
+<tr><td>PWM_OUT</td><td>1-bit</td><td>Output FF → load</td><td>Glitch-free PWM wave</td></tr></table></div>
+<div class="ans">
+The counter runs $0 \to P$, i.e. $P+1$ clocks per cycle:
+$$T_{PWM} = (P+1)\,T_{clk},\quad t_{on} = D_{ty}\,T_{clk},\quad t_{off} = (P+1-D_{ty})\,T_{clk},\quad \text{duty} = \frac{D_{ty}}{P+1}$$
+</div>
+<p class="note">The output D-FF re-times LT on the clock so comparator glitches never reach the output. For glitch-free duty changes, write DUTY into a shadow register that is copied on TC.</p>
+
+<h3>(b) Quadrature encoder interface <span class="mk">[15]</span></h3>
+<p>An incremental (quadrature) encoder gives two square waves A and B, 90° apart. Which one leads tells the direction; every edge of either is one count (×4 decoding).</p>
+<p><b>Overall block diagram:</b></p>
+<figure class="dia"><svg viewBox="0 0 750 210" role="img" aria-label="Quadrature encoder interface overall block diagram"><rect class="blk" x="10" y="30" width="100" height="60" rx="6"/><text class="bt" x="60.0" y="57.0" text-anchor="middle">Encoder</text><text class="bs" x="60.0" y="73.0" text-anchor="middle">channels A, B</text><rect class="blk" x="130" y="30" width="100" height="60" rx="6"/><text class="bt" x="180.0" y="57.0" text-anchor="middle">Input</text><text class="bs" x="180.0" y="73.0" text-anchor="middle">conditioning</text><rect class="blk" x="250" y="30" width="100" height="60" rx="6"/><text class="bt" x="300.0" y="57.0" text-anchor="middle">Synchronizer</text><text class="bs" x="300.0" y="73.0" text-anchor="middle">+ delay</text><rect class="blk" x="370" y="30" width="100" height="60" rx="6"/><text class="bt" x="420.0" y="57.0" text-anchor="middle">Quadrature</text><text class="bs" x="420.0" y="73.0" text-anchor="middle">decoder</text><rect class="blk" x="490" y="30" width="100" height="60" rx="6"/><text class="bt" x="540.0" y="57.0" text-anchor="middle">Up/Down</text><text class="bs" x="540.0" y="73.0" text-anchor="middle">counter</text><rect class="blk" x="610" y="30" width="100" height="60" rx="6"/><text class="bt" x="660.0" y="57.0" text-anchor="middle">Output latch</text><text class="bs" x="660.0" y="73.0" text-anchor="middle">→ data bus</text><polyline class="wire" marker-end="url(#arr)" points="110,60 130,60"/><text class="sig" x="120" y="108" text-anchor="middle">A, B</text><polyline class="wire" marker-end="url(#arr)" points="230,60 250,60"/><text class="sig" x="240" y="108" text-anchor="middle">A_f, B_f</text><polyline class="wire" marker-end="url(#arr)" points="350,60 370,60"/><text class="sig" x="360" y="108" text-anchor="middle">A₂B₂A₃B₃</text><polyline class="wire" marker-end="url(#arr)" points="470,60 490,60"/><text class="sig" x="480" y="108" text-anchor="middle">CE, DIR</text><polyline class="wire" marker-end="url(#arr)" points="590,60 610,60"/><text class="sig" x="600" y="108" text-anchor="middle">Q[7:0]</text><rect class="blk" x="250" y="160" width="100" height="40" rx="6"/><text class="bt" x="300.0" y="185.0" text-anchor="middle">System clock</text><polyline class="wire" marker-end="url(#arr)" points="300,160 300,90"/><circle class="dot" cx="300" cy="130" r="3"/><polyline class="wire" points="300,130 540,130"/><polyline class="wire" marker-end="url(#arr)" points="540,130 540,90"/><rect class="blk" x="610" y="160" width="100" height="40" rx="6"/><text class="bt" x="660.0" y="185.0" text-anchor="middle">MCU / CPU</text><polyline class="wire" marker-end="url(#arr)" points="675,90 675,160"/><text class="sig" x="681" y="130" text-anchor="start">DB[7:0]</text><polyline class="wire" marker-end="url(#arr)" points="640,160 640,90"/><text class="sig" x="634" y="150" text-anchor="end">LE, OE′</text></svg></figure>
+<p><b>Sub-blocks at IC level:</b></p>
+<figure class="dia"><svg viewBox="0 0 680 370" role="img" aria-label="QEI sub-blocks at IC level"><text class="sig" x="2" y="20" text-anchor="start">A, B in</text><polyline class="wire" marker-end="url(#arr)" points="4,80 24,80"/><rect class="blk" x="24" y="30" width="130" height="120" rx="6"/><text class="bt" x="89.0" y="71.0" text-anchor="middle">1. Conditioning</text><text class="bs" x="89.0" y="87.0" text-anchor="middle">RC filter +</text><text class="bs" x="89.0" y="103.0" text-anchor="middle">74HC14</text><text class="bs" x="89.0" y="119.0" text-anchor="middle">Schmitt inverters</text><rect class="blk" x="190" y="20" width="160" height="140" rx="6"/><text class="bt" x="270.0" y="63.0" text-anchor="middle">2. 74HC174</text><text class="bs" x="270.0" y="79.0" text-anchor="middle">hex D-FF</text><text class="bs" x="270.0" y="95.0" text-anchor="middle">A→A₁→A₂→A₃</text><text class="bs" x="270.0" y="111.0" text-anchor="middle">B→B₁→B₂→B₃</text><text class="bs" x="270.0" y="127.0" text-anchor="middle">(all on CLK)</text><polyline class="wire" marker-end="url(#arr)" points="154,70 190,70"/><text class="sig" x="172" y="62" text-anchor="middle">A_f</text><polyline class="wire" marker-end="url(#arr)" points="154,110 190,110"/><text class="sig" x="172" y="102" text-anchor="middle">B_f</text><rect class="blk" x="400" y="20" width="220" height="140" rx="6"/><text class="bt" x="510.0" y="63.0" text-anchor="middle">3. Decoder</text><text class="bs" x="510.0" y="79.0" text-anchor="middle">74HC86 XOR + 74HC32</text><text class="bs" x="510.0" y="95.0" text-anchor="middle">CE = (A₂⊕A₃)+(B₂⊕B₃)</text><text class="bs" x="510.0" y="111.0" text-anchor="middle">DIR = A₂ ⊕ B₃</text><text class="bs" x="510.0" y="127.0" text-anchor="middle">74HC04 → CE′, DIR′</text><polyline class="wire" marker-end="url(#arr)" points="350,90 400,90"/><text class="sig" x="375" y="112" text-anchor="middle">A₂…B₃</text><rect class="blk" x="190" y="220" width="250" height="140" rx="6"/><text class="bt" x="315.0" y="263.0" text-anchor="middle">4. 2 × 74HC191</text><text class="bs" x="315.0" y="279.0" text-anchor="middle">CLK = system clock</text><text class="bs" x="315.0" y="295.0" text-anchor="middle">CTEN′ = CE′,  D/U′ = DIR′</text><text class="bs" x="315.0" y="311.0" text-anchor="middle">stage-2 CTEN′ =</text><text class="bs" x="315.0" y="327.0" text-anchor="middle">(CE · MAX/MIN₁)′  via 74HC00</text><polyline class="wire" marker-end="url(#arr)" points="510,160 510,195 315,195 315,220"/><text class="sig" x="516" y="185" text-anchor="start">CE′, DIR′</text><rect class="blk" x="490" y="235" width="140" height="110" rx="6"/><text class="bt" x="560.0" y="271.0" text-anchor="middle">5. 74HC573</text><text class="bs" x="560.0" y="287.0" text-anchor="middle">8-bit latch</text><text class="bs" x="560.0" y="303.0" text-anchor="middle">LE from MCU</text><text class="bs" x="560.0" y="319.0" text-anchor="middle">OE′ → bus</text><polyline class="wire" marker-end="url(#arr)" points="440,290 490,290"/><text class="sig" x="465" y="283" text-anchor="middle">Q[7:0]</text><polyline class="wire" marker-end="url(#arr)" points="630,290 670,290"/><text class="sig" x="650" y="318" text-anchor="middle">DB[7:0]</text><rect class="blk" x="10" y="220" width="140" height="60" rx="6"/><text class="bt" x="80.0" y="247.0" text-anchor="middle">Crystal osc.</text><text class="bs" x="80.0" y="263.0" text-anchor="middle">system CLK</text><polyline class="wire" marker-end="url(#arr)" points="150,250 190,250"/><polyline class="wire" points="80,220 80,185 270,185"/><polyline class="wire" marker-end="url(#arr)" points="270,185 270,160"/><rect class="blk" x="10" y="300" width="140" height="50" rx="6"/><text class="bt" x="80.0" y="322.0" text-anchor="middle">Index Z (optional)</text><text class="bs" x="80.0" y="338.0" text-anchor="middle">→ LOAD′, count = 0</text><polyline class="wire" marker-end="url(#arr)" points="150,325 190,325"/></svg></figure>
+<div class="tw"><table>
+<tr><th>Sub-block</th><th>ICs</th><th>Job</th></tr>
+<tr><td>1. Input conditioning</td><td>RC low-pass + 74HC14</td><td>Removes noise; Schmitt trigger gives clean edges (A_f, B_f)</td></tr>
+<tr><td>2. Synchronizer + delay</td><td>74HC174 (6 D-FFs)</td><td>A₁, A₂ = two-stage sync to the system clock (no metastability); A₃ = previous sample. Same for B</td></tr>
+<tr><td>3. Decoder</td><td>74HC86, 74HC32, 74HC04</td><td>$CE = (A_2\oplus A_3) + (B_2\oplus B_3)$ = an edge happened; $DIR = A_2 \oplus B_3$ = 1 forward (A leads), 0 reverse</td></tr>
+<tr><td>4. Up/down counter</td><td>2 × 74HC191, 74HC00</td><td>Counts one step per CE on the system clock; D/U′ = DIR′ (up when forward). Stage 2 enabled by $\overline{CE\cdot MAX/MIN_1}$</td></tr>
+<tr><td>5. Output latch</td><td>74HC573</td><td>MCU pulses LE to freeze the count, then reads DB[7:0] with OE′</td></tr>
+<tr><td>Index (optional)</td><td>–</td><td>Z pulse loads 0 (LOAD′) once per revolution</td></tr></table></div>
+<p class="note">Direction check, forward sequence AB = 00 → 10 → 11 → 01: each step gives $A_{new} \oplus B_{old} = 1$; the reverse sequence gives 0 every time (verified for all 8 transitions).</p>
+
+<footer>Part of <a href="index.html">SAP-1 in Proteus</a> · Source on <a href="https://github.com/muhammad345ishar/sap1-proteus">GitHub</a>.</footer>
+</main>
+</body>
+</html>
