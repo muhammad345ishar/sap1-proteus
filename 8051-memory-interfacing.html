@@ -1,0 +1,1273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>8051 Memory Interfacing</title>
+<meta name="description" content="8051 memory interfacing from first principles: decoders, chip selects, the Block Method, and every DLD past-paper chip-select question solved (PIEAS BSEE).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one 780px reading column under a full-bleed sticky section rail; worked examples sit in datasheet-style panels; module colours match the class PDF */
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --panel-2:#E9EDF3; --ink:#131923; --muted:#576072; --rule:#D4DAE3;
+  --sig:#B4226C; --sig-soft:#F7E2EC; --ok:#1C7A4B;
+  --m1:#2C66D1; --m2:#C9660F; --m3:#2B8A3E; --m4:#7848CE; --m5:#C23636; --m6:#0B7D85; --m7:#6B7A12; --m8:#8A5A33; --nc:#A3ABB8;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1016; --panel:#151A22; --panel-2:#1D2430; --ink:#E4E8EF; --muted:#97A0B0; --rule:#2A313D;
+    --sig:#F070B2; --sig-soft:#3A1A2C; --ok:#5BCB8B;
+    --m1:#6F9DFF; --m2:#F09A4A; --m3:#5DC170; --m4:#A887F6; --m5:#F27272; --m6:#3CC3C8; --m7:#B9C95A; --m8:#D2A47C; --nc:#566171;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1016; --panel:#151A22; --panel-2:#1D2430; --ink:#E4E8EF; --muted:#97A0B0; --rule:#2A313D;
+  --sig:#F070B2; --sig-soft:#3A1A2C; --ok:#5BCB8B;
+  --m1:#6F9DFF; --m2:#F09A4A; --m3:#5DC170; --m4:#A887F6; --m5:#F27272; --m6:#3CC3C8; --m7:#B9C95A; --m8:#D2A47C; --nc:#566171;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.62;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:var(--sig);text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--sig);outline-offset:2px;border-radius:3px}
+sub{font-size:.7em;vertical-align:-.28em;line-height:0}
+sup{font-size:.7em;vertical-align:.5em;line-height:0}
+b,strong{font-weight:600}
+
+/* nav rail */
+.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--rule)}
+.toc-in{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.toc-in::-webkit-scrollbar{display:none}
+.toc a{flex:none;font-family:var(--f-mono);font-size:.74rem;padding:5px 10px;border:1px solid var(--rule);border-radius:999px;color:var(--muted);text-decoration:none;white-space:nowrap;background:var(--panel)}
+.toc a:hover{color:var(--ink);border-color:var(--ink)}
+
+.wrap{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px 96px}
+section{padding-top:60px;scroll-margin-top:calc(54px + env(safe-area-inset-top,0px))}
+article{scroll-margin-top:calc(54px + env(safe-area-inset-top,0px))}
+p,li,dd{max-width:68ch}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sig);margin:0}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(2.3rem,8vw,3.7rem);font-weight:800;font-stretch:118%;line-height:1.02;letter-spacing:-.015em;margin:.18em 0 .35em}
+h2{font-size:clamp(1.55rem,4.8vw,2.1rem);font-weight:750;font-stretch:112%;line-height:1.12;letter-spacing:-.01em;margin:.25em 0 .55em}
+h3{font-size:1.2rem;font-weight:700;font-stretch:106%;line-height:1.25;margin:1.9em 0 .5em}
+h4{font-size:1rem;font-weight:700;font-stretch:104%;margin:1.4em 0 .4em}
+.lede{font-size:1.1rem;color:var(--ink);max-width:62ch}
+.muted{color:var(--muted)}
+.note{font-size:.88rem;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* expressions */
+.bx,.bxr{white-space:normal}
+.ov{display:inline-block;border-top:1.5px solid currentColor;line-height:1.12;padding-top:1px}
+.formula{font-size:1.06rem;padding:12px 16px;background:var(--panel-2);border-radius:6px;text-align:center;overflow-x:auto;margin:14px 0;line-height:1.9}
+
+/* hero */
+.hero{padding-top:34px}
+.herobar{margin:26px 0 8px}
+.bar{display:flex;gap:2px;height:34px}
+.seg{flex:1;border-radius:3px;background:var(--c);color:var(--panel);font-family:var(--f-mono);font-size:.68rem;font-weight:600;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
+.seg.nc{background:repeating-linear-gradient(135deg,var(--panel-2) 0 4px,var(--rule) 4px 6px)}
+.ticks{position:relative;height:18px;font-family:var(--f-mono);font-size:.66rem;color:var(--muted);margin-top:4px}
+.ticks span{position:absolute;top:0;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:none;left:auto!important;right:0}
+.herobar figcaption{font-size:.88rem;color:var(--muted);margin-top:6px}
+.m1{--c:var(--m1)}.m2{--c:var(--m2)}.m3{--c:var(--m3)}.m4{--c:var(--m4)}.m5{--c:var(--m5)}.m6{--c:var(--m6)}.m7{--c:var(--m7)}.m8{--c:var(--m8)}.nc{--c:var(--nc)}
+
+/* boxes */
+.key{position:relative;border:1.5px solid var(--ink);border-radius:6px;padding:18px 18px 12px;margin:26px 0;background:var(--panel)}
+.key-l{position:absolute;top:-.72em;left:12px;background:var(--bg);padding:0 6px;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.key p:first-of-type{margin-top:0}
+.key ol,.key ul{padding-left:1.3em}
+dl.defs{margin:12px 0;display:grid;grid-template-columns:1fr;gap:2px 18px}
+dl.defs dt{font-weight:600;margin-top:10px}
+dl.defs dd{margin:0}
+@media(min-width:680px){dl.defs{grid-template-columns:11.5rem 1fr}dl.defs dt{margin-top:0;padding-block:7px;border-top:1px solid var(--rule)}dl.defs dd{padding-block:7px;border-top:1px solid var(--rule)}}
+
+.ex{border:1px solid var(--rule);border-radius:10px;background:var(--panel);padding:14px 16px;margin:16px 0}
+.ex-h{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.ex-n{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sig);font-weight:600}
+.ex-src{font-family:var(--f-mono);font-size:.7rem;color:var(--muted)}
+.ex-q{font-weight:500;margin:6px 0 8px}
+.ex-s{padding-left:1.25em;margin:0}
+.ex-s li{margin:5px 0}
+.ex-a{margin:12px 0 0;padding:8px 12px;background:var(--sig-soft);border-radius:6px}
+
+.final{border:1.5px solid var(--ok);border-radius:8px;padding:14px 16px 10px;background:color-mix(in srgb,var(--ok) 7%,var(--panel));margin:18px 0;position:relative}
+.final .key-l{color:var(--ok)}
+.final p:first-of-type{margin-top:0}
+
+.tw{overflow-x:auto;margin:14px 0;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;vertical-align:top}
+th{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--panel-2);font-weight:500}
+tr:last-child td{border-bottom:0}
+td.c,th.c{text-align:center}
+td.one{color:var(--sig);font-weight:600}
+.wrapcell td{white-space:normal}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:0}
+
+.hexgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:12px 0}
+.hexgrid div{background:var(--panel);border:1px solid var(--rule);border-radius:5px;text-align:center;padding:4px 0;font-family:var(--f-mono);font-size:.78rem;line-height:1.3}
+.hexgrid b{display:block;font-size:.95rem;color:var(--sig)}
+.nibbles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0}
+.nibbles div{border:1px solid var(--rule);border-radius:6px;background:var(--panel);padding:8px 4px;text-align:center;font-size:.8rem;line-height:1.35}
+.nibbles .d{font-family:var(--f-mono);font-size:1.15rem;font-weight:600;display:block}
+
+/* block map */
+.bmap{--cols:var(--c-sm);display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:3px;margin:12px 0 6px}
+@media(min-width:700px){.bmap.w16{--cols:16}}
+.cell{border-radius:4px;padding:5px 1px 4px;text-align:center;font-family:var(--f-mono);font-size:.66rem;line-height:1.3;background:color-mix(in srgb,var(--c) 15%,var(--panel));border:1px solid color-mix(in srgb,var(--c) 55%,transparent);min-width:0;overflow:hidden}
+.cell .y{display:block;color:var(--muted)}
+.cell .mm{display:block;font-weight:600;color:var(--c);font-size:.78rem}
+.cell .h{display:block;color:var(--ink)}
+.cell.nc{background:var(--panel)}
+.cell.nc .mm{color:var(--muted)}
+.cell.hl{outline:2.5px solid var(--sig);outline-offset:1px}
+
+/* circuits */
+.circ{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--panel);padding:8px;margin:14px 0 4px}
+.circ svg{display:block;width:100%;min-width:520px;height:auto}
+.circ.small svg{min-width:420px}
+.circ-cap{font-size:.84rem;color:var(--muted);margin:4px 0 14px}
+.circ{position:relative}
+@media(max-width:560px){.circ:not(.small)::before{content:"swipe sideways for the chips →";display:block;font-family:var(--f-mono);font-size:.66rem;color:var(--muted);margin:0 0 4px 2px;position:sticky;left:0}}
+.sv text{font-family:var(--f-body);fill:var(--ink)}
+.sv text.mono{font-family:var(--f-mono)}
+.sv text.muted{fill:var(--muted)}
+.sv .w{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.sv .thin{stroke-width:1.15}
+.sv .s-ink{stroke:var(--ink)} .sv .s-nc{stroke:var(--nc)} .sv .s-sig{stroke:var(--sig)}
+.sv .s-m1{stroke:var(--m1)} .sv .s-m2{stroke:var(--m2)} .sv .s-m3{stroke:var(--m3)} .sv .s-m4{stroke:var(--m4)} .sv .s-m5{stroke:var(--m5)} .sv .s-m6{stroke:var(--m6)} .sv .s-m7{stroke:var(--m7)} .sv .s-m8{stroke:var(--m8)}
+.sv .f-panel{fill:var(--panel)} .sv .f-dec{fill:var(--panel-2)} .sv .f-ink{fill:var(--ink)}
+.sv .f-m1{fill:color-mix(in srgb,var(--m1) 13%,var(--panel))} .sv .f-m2{fill:color-mix(in srgb,var(--m2) 13%,var(--panel))} .sv .f-m3{fill:color-mix(in srgb,var(--m3) 13%,var(--panel))}
+.sv .f-m4{fill:color-mix(in srgb,var(--m4) 13%,var(--panel))} .sv .f-m5{fill:color-mix(in srgb,var(--m5) 13%,var(--panel))} .sv .f-m6{fill:color-mix(in srgb,var(--m6) 13%,var(--panel))}
+
+/* widgets */
+.widget{border:1.5px solid var(--ink);border-radius:10px;background:var(--panel);padding:16px;margin:20px 0}
+.widget-h{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sig);font-weight:600;margin:0 0 4px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted);min-width:0}
+input[type=text],input[type=number],select{font-family:var(--f-mono);font-size:16px;padding:8px 10px;border:1.5px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);min-width:0;width:100%}
+input:focus,select:focus{border-color:var(--ink)}
+.btn{font-family:var(--f-body);font-weight:600;font-size:.92rem;padding:9px 14px;border-radius:6px;border:1.5px solid var(--ink);background:var(--ink);color:var(--panel);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.bitbtn{font-family:var(--f-mono);font-size:1.05rem;min-width:52px;height:46px;border:1.5px solid var(--ink);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:2px 6px}
+.bitbtn small{font-size:.62rem;color:inherit;opacity:.75}
+.bitbtn[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.leds{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;margin:14px 0 8px}
+.led{text-align:center;font-family:var(--f-mono);font-size:.8rem;padding:9px 0;border-radius:6px;border:1px solid var(--rule);color:var(--muted);background:var(--panel-2);transition:background .15s}
+.led.on{background:var(--sig);color:var(--panel);border-color:var(--sig);box-shadow:0 0 0 3px var(--sig-soft)}
+.nibrow{display:flex;gap:7px;margin:12px 0 8px}
+.nib{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;min-width:0}
+.bitcell{text-align:center;font-family:var(--f-mono);font-size:.92rem;padding:5px 0 3px;border-radius:4px;background:var(--panel-2);line-height:1.2;min-width:0}
+.bitcell .ln{display:block;font-size:.55rem;color:var(--muted);letter-spacing:-.02em}
+.bitcell.hi{background:var(--sig-soft);color:var(--sig);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.out p{margin:6px 0}
+
+/* machine */
+.mrows{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.mrow{display:grid;grid-template-columns:2.6rem minmax(0,1fr) minmax(0,1fr) 2.6rem;gap:8px;align-items:end}
+.mtag{font-family:var(--f-mono);font-weight:600;font-size:.85rem;color:var(--c);padding-bottom:10px}
+.xbtn{height:40px;border:1.5px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--muted);font-size:1.2rem;cursor:pointer}
+.xbtn:hover{color:var(--ink);border-color:var(--ink)}
+.report{margin-top:8px;border-top:1px solid var(--rule)}
+.st{font-family:var(--f-mono);font-size:.68rem;font-weight:600;letter-spacing:.04em;background:var(--ink);color:var(--panel);padding:2px 7px;border-radius:4px;margin-right:8px;vertical-align:2px;font-stretch:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{font-family:var(--f-mono);font-size:.78rem;border:1px solid var(--rule);border-radius:4px;padding:2px 8px;background:var(--panel)}
+.chip.min{border-color:var(--sig);color:var(--sig);font-weight:600}
+.cs{margin:6px 0;line-height:2}
+.cs .alt{color:var(--muted)}
+.err{border:1.5px solid var(--m5);border-radius:8px;padding:8px 14px;margin:12px 0}
+.err p{margin:6px 0}
+ul.verify{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 16px;font-size:.88rem}
+.okm{color:var(--ok);font-weight:700}.bad{color:var(--m5);font-weight:700}
+.probe-out{margin-top:8px;padding:10px 12px;background:var(--panel-2);border-radius:6px;font-size:.94rem;min-height:2.6em}
+
+/* past papers */
+.paper{border-top:2px solid var(--ink);margin-top:48px;padding-top:14px}
+.ptag{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);letter-spacing:.04em}
+.question{background:var(--panel);border:1px dashed var(--muted);border-radius:8px;padding:12px 16px;margin:12px 0}
+.question p{margin:6px 0}
+.step{margin:16px 0 0}
+.step > p:first-child{margin-top:0}
+
+details.sol{margin:14px 0}
+details.sol summary{cursor:pointer;font-weight:600;padding:9px 14px;border:1.5px solid var(--ink);border-radius:6px;display:inline-block;list-style:none;user-select:none}
+details.sol summary::-webkit-details-marker{display:none}
+details.sol[open] summary{background:var(--ink);color:var(--panel)}
+.practice{border:1px solid var(--rule);border-radius:10px;background:var(--panel);padding:14px 16px;margin:18px 0}
+
+.cheat ol{padding-left:1.3em}
+.cheat li{margin:6px 0}
+footer{margin-top:60px;padding-top:16px;border-top:1px solid var(--rule);font-size:.84rem;color:var(--muted)}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media(min-width:900px){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="Sections">
+  <div class="toc-in">
+    <a href="index.html">← Index</a><a href="#picture">Big picture</a><a href="#lines">P1 Lines</a><a href="#hex">P2 Hex</a><a href="#decoder">P3 Decoder</a><a href="#split">P4 Split</a><a href="#merge">P5 Merging</a><a href="#class">Class method</a><a href="#harder">Why harder</a><a href="#block">Block Method</a><a href="#papers">Past papers</a><a href="#machine">Machine</a><a href="#practice">Practice</a><a href="#cheat">Cheat sheet</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Digital Logic Design · Memory interfacing · Weeks 4–5</p>
+  <h1>8051 Memory Interfacing</h1>
+  <p class="lede">How a microcontroller switches on exactly one memory chip for every address. Every term is defined before it's used, every formula is derived, all the past-paper questions are solved step by step, and a machine at the end solves new ones for you.</p>
+
+  <figure class="herobar">
+    <div class="bar" role="img" aria-label="64K memory map: M1 at 0000h to 0FFFh, M2 at 4000h to 7FFFh, M3 at A000h to BFFFh, M4 at F000h to FFFFh, the rest unused">
+      <span class="seg m1">M1</span><span class="seg nc"></span><span class="seg nc"></span><span class="seg nc"></span><span class="seg m2">M2</span><span class="seg m2"></span><span class="seg m2"></span><span class="seg m2"></span><span class="seg nc"></span><span class="seg nc"></span><span class="seg m3">M3</span><span class="seg m3"></span><span class="seg nc"></span><span class="seg nc"></span><span class="seg nc"></span><span class="seg m4">M4</span>
+    </div>
+    <div class="ticks"><span style="left:0">0000h</span><span style="left:25%">4000h</span><span style="left:50%">8000h</span><span style="left:75%">C000h</span><span>FFFFh</span></div>
+    <figcaption>Terminal 2022, Q3(b): four chips of different sizes with gaps between them. Each little segment is a 4K "block". By the end of this page you'll draw its decoder circuit from scratch.</figcaption>
+  </figure>
+
+  <div class="key"><span class="key-l">The whole topic in one box</span>
+    <p><b>Can the class method do the past-paper chip-select questions? Yes, every one of them.</b> The class method is four steps:</p>
+    <ol>
+      <li>Count the address lines (64K = 2<sup>16</sup>, so 16 lines).</li>
+      <li>Give each module its <b>lower</b> address lines (a 2<sup>m</sup>-byte module takes <span class="bx">Am−1 … A0</span>).</li>
+      <li>Give the <b>upper</b> address lines to a decoder.</li>
+      <li>Each decoder output is a chip select (CS).</li>
+    </ol>
+    <p>The past papers add exactly one new idea: the modules have <b>different sizes</b>. So a big module covers several equal slices of memory (called <b>blocks</b>), and its CS is the <b>OR</b> of several decoder outputs. Everything else on this page is practice of that one idea.</p>
+  </div>
+  <p class="note">If any word in that box is fuzzy, read the five prerequisites (P1–P5) in order. If it's all clear, jump to <a href="#block">the Block Method</a>.</p>
+</header>
+
+<!-- ============ BIG PICTURE ============ -->
+<section id="picture">
+  <p class="eyebrow">Start here</p>
+  <h2>The problem: many chips, one set of wires</h2>
+  <p>The 8051 reads and writes memory by putting numbers on wires. It can address up to 64K bytes of external memory, but that memory often comes as several smaller chips, and all of them are connected to the same wires. This whole topic answers one question: when the 8051 puts out an address, how does the right chip, and only that chip, know it's being talked to?</p>
+
+  <h3>Words you'll need</h3>
+  <dl class="defs">
+    <dt>Bit, byte</dt><dd>A bit is a single 0 or 1. A byte is 8 bits.</dd>
+    <dt>IC (chip)</dt><dd>An integrated circuit: a package of circuitry with metal pins. The 8051 is an IC and so is each memory.</dd>
+    <dt>Memory location</dt><dd>One storage box inside a memory chip. It holds 1 byte.</dd>
+    <dt>Address</dt><dd>The number that names a location, like a house number on a street. Location 0, location 1, location 2, …</dd>
+    <dt>Address line, address bus</dt><dd>One wire per bit of the address, named <span class="bx">A0, A1, A2</span>, … <span class="bx">A0</span> carries the <b>least significant bit</b> (LSB, the bit worth 1); the highest-numbered line carries the <b>most significant bit</b> (MSB). All the address wires together are the <b>address bus</b>.</dd>
+    <dt>Data bus</dt><dd>The 8 wires <span class="bx">D7–D0</span> that carry the byte being read or written.</dd>
+    <dt>Read and write signals</dt><dd><span class="bx">~RD</span> and <span class="bx">~WR</span>: control wires from the 8051 that tell a memory whether to send out a byte (read) or store one (write). The bar on top means active-low.</dd>
+    <dt>Active-high, active-low</dt><dd>An active-high pin does its job when it is 1. An active-low pin does its job when it is 0. On a diagram, active-low pins get a small circle called a <b>bubble</b>.</dd>
+    <dt>Memory module</dt><dd>One memory chip with 2<sup>m</sup> locations. Its pins: m address pins, 8 data pins, <span class="bx">~RD</span>, <span class="bx">~WR</span>, and CS.</dd>
+    <dt>Chip select (CS)</dt><dd>The chip's on/off switch for the bus. When CS is active, the chip obeys <span class="bx">~RD</span>/<span class="bx">~WR</span>. When CS is inactive, the chip ignores everything and its data pins go high-impedance.</dd>
+    <dt>High-impedance (tri-state)</dt><dd>An output state in which the pin behaves as if it were unplugged. This is what lets many chips share one data bus without interfering.</dd>
+    <dt>Logic gates</dt><dd><b>AND</b> outputs 1 only if all its inputs are 1. <b>OR</b> outputs 1 if any input is 1. <b>NOT</b> (an inverter) flips 0↔1.</dd>
+    <dt>Address decoder</dt><dd>The logic circuit that looks at the address and makes exactly one CS active.</dd>
+    <dt>Memory map</dt><dd>A table or picture showing which range of addresses belongs to which chip (like the bar at the top of this page).</dd>
+  </dl>
+
+  <h3>The rule everything follows</h3>
+  <p>Every chip hangs on the same address bus and the same data bus. If two chips were selected for one address, both would push different bytes onto <span class="bx">D7–D0</span> at the same moment. That is a <b>bus conflict</b> (also called bus contention): the byte the 8051 reads is garbage, and the fighting outputs can overheat.</p>
+  <div class="key"><span class="key-l">Rule</span>
+    <p>For every address, <b>at most one CS</b> may be active. Exactly one if a chip lives at that address; zero if the address is a gap.</p>
+  </div>
+
+  <h3>A picture to keep in your head</h3>
+  <p>Think of the 64K address space as a building with 16 floors and 4096 rooms on each floor. An address like 8ABCh is a room number: the first hex digit (8) picks the floor, the last three digits (ABC) pick the room on that floor. The decoder is the lift operator: it opens the doors of exactly one floor. A small chip occupies one floor; a big chip occupies several floors, so its doors must open for any of them. That last sentence is the whole "OR gate" idea you'll meet later.</p>
+</section>
+
+<!-- ============ P1 LINES ============ -->
+<section id="lines">
+  <p class="eyebrow">Prerequisite 1</p>
+  <h2>Address lines and powers of 2</h2>
+  <p>Each address line carries one bit. So the real question is: how many different addresses can n wires spell out?</p>
+  <div class="tw"><table>
+    <thead><tr><th>Wires</th><th>All patterns</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td class="mono">0, 1</td><td>2</td></tr>
+      <tr><td>2</td><td class="mono">00, 01, 10, 11</td><td>4</td></tr>
+      <tr><td>3</td><td class="mono">000, 001, 010, 011, 100, 101, 110, 111</td><td>8</td></tr>
+    </tbody>
+  </table></div>
+  <p>Every time you add a wire, each old pattern appears twice: once with the new wire at 0 and once with it at 1. So the count doubles with every wire:</p>
+  <div class="formula">locations = 2 × 2 × … × 2 (n times) = 2<sup>n</sup> &nbsp;&nbsp;⟺&nbsp;&nbsp; n = log<sub>2</sub>(locations)</div>
+  <p><b>log<sub>2</sub></b> means "which power of 2 gives this number". log<sub>2</sub> 1024 = 10, because 2<sup>10</sup> = 1024.</p>
+
+  <h3>Why 1K means 1024</h3>
+  <p>Because sizes come from wires, memory sizes are always powers of 2. The power of 2 closest to 1000 is 2<sup>10</sup> = 1024, so in memory "1K" means 1024 bytes, not 1000. Then 2K = 2<sup>11</sup>, 4K = 2<sup>12</sup>, and so on: every doubling of size adds one line.</p>
+  <div class="formula">N K = N × 2<sup>10</sup>. &nbsp;If N = 2<sup>p</sup>, then N K = 2<sup>p+10</sup> → p + 10 address lines.</div>
+  <p>Lines are counted from <span class="bx">A0</span>, so n lines are named <span class="bx">An−1 … A0</span>. A 64K system has 16 lines, <span class="bx">A15 … A0</span>; there is no <span class="bx">A16</span> in it.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Size</th><th>Locations</th><th>Lines</th><th>Line names</th><th>Size in hex</th></tr></thead>
+    <tbody class="mono">
+      <tr><td>1K</td><td>2<sup>10</sup></td><td>10</td><td><span class="bx">A9 … A0</span></td><td>0400h</td></tr>
+      <tr><td>2K</td><td>2<sup>11</sup></td><td>11</td><td><span class="bx">A10 … A0</span></td><td>0800h</td></tr>
+      <tr><td>4K</td><td>2<sup>12</sup></td><td>12</td><td><span class="bx">A11 … A0</span></td><td>1000h</td></tr>
+      <tr><td>8K</td><td>2<sup>13</sup></td><td>13</td><td><span class="bx">A12 … A0</span></td><td>2000h</td></tr>
+      <tr><td>16K</td><td>2<sup>14</sup></td><td>14</td><td><span class="bx">A13 … A0</span></td><td>4000h</td></tr>
+      <tr><td>32K</td><td>2<sup>15</sup></td><td>15</td><td><span class="bx">A14 … A0</span></td><td>8000h</td></tr>
+      <tr><td>64K</td><td>2<sup>16</sup></td><td>16</td><td><span class="bx">A15 … A0</span></td><td>10000h</td></tr>
+      <tr><td>128K</td><td>2<sup>17</sup></td><td>17</td><td><span class="bx">A16 … A0</span></td><td>20000h</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">The "size in hex" column is explained in P2.</p>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 1.1</span><span class="ex-src">Sessional #1 2022, Q3(a)</span></div>
+    <p class="ex-q">A micro-controller has a code memory of 32K × 1 byte. How many address lines are needed to reach each location uniquely?</p>
+    <ol class="ex-s"><li>Write 32 as a power of 2: 32 = 2<sup>5</sup>.</li><li>32K = 2<sup>5</sup> × 2<sup>10</sup> = 2<sup>15</sup> locations.</li><li>n = log<sub>2</sub>(2<sup>15</sup>) = 15.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 15 lines, <span class="bx">A14 … A0</span>.</p></div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 1.2</span><span class="ex-src">Sessional #2 2023, Q1(a)</span></div>
+    <p class="ex-q">A microcontroller can interface up to 128 KB. How many address lines are needed?</p>
+    <ol class="ex-s"><li>128 = 2<sup>7</sup>, so 128K = 2<sup>7</sup> × 2<sup>10</sup> = 2<sup>17</sup>.</li><li>n = 17.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 17 lines, <span class="bx">A16 … A0</span>.</p></div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 1.3</span></div>
+    <p class="ex-q">How many address pins does an 8K memory chip have?</p>
+    <ol class="ex-s"><li>8 = 2<sup>3</sup>, so 8K = 2<sup>13</sup> locations.</li><li>To give each of its 2<sup>13</sup> cells its own number it needs 13 bits.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 13 pins, <span class="bx">A12 … A0</span>.</p></div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 1.4</span><span class="ex-src">Reverse direction</span></div>
+    <p class="ex-q">A chip has 11 address pins. What is its size?</p>
+    <ol class="ex-s"><li>11 pins → 2<sup>11</sup> locations.</li><li>2<sup>11</sup> = 2<sup>1</sup> × 2<sup>10</sup> = 2 × 1K.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 2K.</p></div>
+</section>
+
+<!-- ============ P2 HEX ============ -->
+<section id="hex">
+  <p class="eyebrow">Prerequisite 2</p>
+  <h2>Hex, K-to-hex, and end addresses</h2>
+  <p><b>Hexadecimal</b> (hex) is base 16. It uses the digits 0–9 and then A = 10, B = 11, C = 12, D = 13, E = 14, F = 15. We write an "h" after a hex number (4000h) so it isn't mistaken for decimal.</p>
+
+  <h3>Why addresses are written in hex</h3>
+  <p>Four bits have 2<sup>4</sup> = 16 patterns, and hex has exactly 16 digits. So every hex digit is exactly 4 bits, which means exactly 4 address lines. (A group of 4 bits is called a <b>nibble</b>.)</p>
+  <div class="hexgrid" aria-label="Hex digits with their 4-bit binary values">
+    <div><b>0</b>0000</div><div><b>1</b>0001</div><div><b>2</b>0010</div><div><b>3</b>0011</div><div><b>4</b>0100</div><div><b>5</b>0101</div><div><b>6</b>0110</div><div><b>7</b>0111</div>
+    <div><b>8</b>1000</div><div><b>9</b>1001</div><div><b>A</b>1010</div><div><b>B</b>1011</div><div><b>C</b>1100</div><div><b>D</b>1101</div><div><b>E</b>1110</div><div><b>F</b>1111</div>
+  </div>
+  <p>A 16-bit address is 4 hex digits, and each digit sits on its own 4 lines:</p>
+  <div class="nibbles">
+    <div><span class="d">A</span>1st digit<br><span class="bx">A15–A12</span></div>
+    <div><span class="d">0</span>2nd digit<br><span class="bx">A11–A8</span></div>
+    <div><span class="d">0</span>3rd digit<br><span class="bx">A7–A4</span></div>
+    <div><span class="d">0</span>4th digit<br><span class="bx">A3–A0</span></div>
+  </div>
+  <p>So A000h = 1010 0000 0000 0000, which means <span class="bx">A15</span> = 1, <span class="bx">A14</span> = 0, <span class="bx">A13</span> = 1, <span class="bx">A12</span> = 0. Reading the top four lines of an address is just reading its first hex digit.</p>
+
+  <h3>Where "1K = 0400h" comes from</h3>
+  <p>Hex place values go up by 16: 1, 16, 256, 4096. So 0100h = 256. Since 1024 = 4 × 256:</p>
+  <div class="formula">1K = 1024 = 4 × 256 = 4 × 0100h = 0400h<br>N K = N × 0400h = (4N) × 0100h</div>
+  <p>Multiplying by 0100h in hex just adds two zeros at the end, the same way ×100 does in decimal. That gives a shortcut you can do in your head.</p>
+  <div class="key"><span class="key-l">Shortcut</span><p>To write N K in hex: multiply N by 4, convert that number to hex, then append <b>00</b>.</p></div>
+  <p>Converting a number below 256 to hex: divide by 16. The quotient is the first hex digit and the remainder is the second. Example: 104 ÷ 16 = 6 remainder 8, so 104 = 68h.</p>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.1</span></div>
+    <p class="ex-q">Write 6K in hex.</p>
+    <ol class="ex-s"><li>4 × 6 = 24.</li><li>24 ÷ 16 = 1 remainder 8 → 18h.</li><li>Append 00.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 6K = 1800h.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.2</span></div>
+    <p class="ex-q">Write 26K in hex.</p>
+    <ol class="ex-s"><li>4 × 26 = 104.</li><li>104 ÷ 16 = 6 remainder 8 → 68h.</li><li>Append 00.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 26K = 6800h.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.3</span></div>
+    <p class="ex-q">Write 40K and 60K in hex.</p>
+    <ol class="ex-s"><li>40K: 4 × 40 = 160 = 10 × 16 + 0 → A0h → <b>A000h</b>.</li><li>60K: 4 × 60 = 240 = 15 × 16 + 0 → F0h → <b>F000h</b>.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 40K = A000h, 60K = F000h.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.4</span><span class="ex-src">Reverse direction</span></div>
+    <p class="ex-q">How many K is C000h?</p>
+    <ol class="ex-s"><li>Drop the last two zeros: C0h.</li><li>C0h = 12 × 16 = 192.</li><li>Divide by 4 (undoing the "× 4"): 192 ÷ 4 = 48.</li></ol>
+    <p class="ex-a"><b>Answer:</b> C000h = 48K.</p></div>
+
+  <h3>End address = start + size − 1</h3>
+  <p>A module with S locations that starts at address s uses s, s + 1, s + 2, …, up to s + (S − 1). Count them: that is exactly S numbers. So</p>
+  <div class="formula">end = start + size − 1 = (next start) − 1</div>
+  <p>Tiny check: a 4-location chip starting at 0 uses 0, 1, 2, 3. Its end is 3, not 4.</p>
+  <p><b>Subtracting 1 in hex:</b> every trailing 0 becomes F, and the digit just before them goes down by 1. So 5000h − 1 = 4FFFh, and 7800h − 1 = 77FFh.</p>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.5</span><span class="ex-src">Sessional #1 2021</span></div>
+    <p class="ex-q">Write the range "16K to 20K − 1" in hex.</p>
+    <ol class="ex-s"><li>16K: 4 × 16 = 64 = 40h → 4000h.</li><li>20K: 4 × 20 = 80 = 50h → 5000h.</li><li>End = 5000h − 1 = 4FFFh.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 4000h–4FFFh.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.6</span><span class="ex-src">Sessional #1 2022</span></div>
+    <p class="ex-q">Write the range "26K to 30K − 1" in hex.</p>
+    <ol class="ex-s"><li>26K = 6800h (Example 2.2).</li><li>30K: 4 × 30 = 120 = 7 × 16 + 8 → 78h → 7800h.</li><li>End = 7800h − 1 = 77FFh.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 6800h–77FFh.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 2.7</span><span class="ex-src">Sessional #2 2023</span></div>
+    <p class="ex-q">In a 128K system, write 56K in hex.</p>
+    <ol class="ex-s"><li>4 × 56 = 224 = 14 × 16 + 0 → E0h → E000h.</li><li>128K has 17 lines. 17 bits need 5 hex digits (the 5th digit from the right holds only <span class="bx">A16</span>), so pad with a leading 0.</li></ol>
+    <p class="ex-a"><b>Answer:</b> 0E000h.</p></div>
+</section>
+
+<!-- ============ P3 DECODER ============ -->
+<section id="decoder">
+  <p class="eyebrow">Prerequisite 3</p>
+  <h2>The decoder</h2>
+  <p>A decoder is a <b>combinational circuit</b> (its outputs depend only on its present inputs; it has no memory) that turns a binary number into "one wire out of many". Two ideas first.</p>
+  <dl class="defs">
+    <dt>Complement</dt><dd><span class="bx">~A</span> (read "A bar" or "NOT A") is 1 when A is 0, and 0 when A is 1. It's what a NOT gate outputs.</dd>
+    <dt>Minterm</dt><dd>An AND of every input variable, each appearing exactly once, either plain or complemented. Example for inputs <span class="bx">A1, A0</span>: <span class="bx">A1·~A0</span>. A minterm is 1 for exactly one input combination.</dd>
+  </dl>
+
+  <h3>Building the decoder from minterms</h3>
+  <p>An AND gate gives 1 only when all its inputs are 1. Suppose we want a gate that fires only when <span class="bx">A1A0</span> = 10. Feed it <span class="bx">A1</span> (which is 1 exactly when <span class="bx">A1</span> = 1) and <span class="bx">~A0</span> (which is 1 exactly when <span class="bx">A0</span> = 0). So <span class="bx">Y2 = A1·~A0</span>.</p>
+  <div class="key"><span class="key-l">Rule</span><p>For output <span class="bx">Yi</span>: write i in binary. Wherever the bit is 1, use the variable; wherever it is 0, use its complement. AND them together. That AND term is the minterm m<sub>i</sub>.</p></div>
+  <p>An <b>n-to-2<sup>n</sup> decoder</b> has n inputs and 2<sup>n</sup> outputs, with <span class="bx">Yi</span> = m<sub>i</sub>. The input can only be one number at a time, so <b>exactly one output is 1</b>: the one whose index equals the input number.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="c"><span class="bx">A1</span></th><th class="c"><span class="bx">A0</span></th><th class="c"><span class="bx">Y0</span></th><th class="c"><span class="bx">Y1</span></th><th class="c"><span class="bx">Y2</span></th><th class="c"><span class="bx">Y3</span></th></tr></thead>
+    <tbody class="mono">
+      <tr><td class="c">0</td><td class="c">0</td><td class="c one">1</td><td class="c">0</td><td class="c">0</td><td class="c">0</td></tr>
+      <tr><td class="c">0</td><td class="c">1</td><td class="c">0</td><td class="c one">1</td><td class="c">0</td><td class="c">0</td></tr>
+      <tr><td class="c">1</td><td class="c">0</td><td class="c">0</td><td class="c">0</td><td class="c one">1</td><td class="c">0</td></tr>
+      <tr><td class="c">1</td><td class="c">1</td><td class="c">0</td><td class="c">0</td><td class="c">0</td><td class="c one">1</td></tr>
+    </tbody>
+  </table></div>
+  <p class="formula"><span class="bx">Y0 = ~A1·~A0 &nbsp; Y1 = ~A1·A0 &nbsp; Y2 = A1·~A0 &nbsp; Y3 = A1·A0</span></p>
+
+  <h3>The enable input</h3>
+  <p>An <b>enable</b> is an extra input that switches the whole decoder on or off. With enable EN:</p>
+  <div class="formula"><span class="bx">Yi</span> = EN · m<sub>i</sub></div>
+  <p>When EN = 0, every output is 0 no matter what the other inputs are. An <b>active-low enable</b> is written <span class="bx">~E</span> and drawn with a bubble: the decoder works when that pin is 0. Inside, it is inverted once, so EN = NOT <span class="bx">~E</span>.</p>
+  <p>Enables are what let you build big decoders from small ones. Two 2-to-4 decoders make a 3-to-8: <span class="bx">A1, A0</span> go to both; <span class="bx">A2</span> goes straight to the enable of the "upper" decoder and through a NOT gate to the "lower" one. When <span class="bx">A2</span> = 0 only the lower decoder works and gives <span class="bx">Y0–Y3</span>; when <span class="bx">A2</span> = 1 only the upper one works and gives <span class="bx">Y4–Y7</span>. The same trick lets one address line (<span class="bx">A16</span> in the 2023 paper) switch a whole decoder off.</p>
+  <p class="note">For reference: common decoder chips are the 74139 (two 2-to-4s), 74138 (3-to-8) and 74154 (4-to-16). Real ones have active-low outputs; in these exam questions, use active-high unless told otherwise.</p>
+
+  <div class="widget" id="dec-toy">
+    <p class="widget-h">Try it · 3-to-8 decoder, active-low enable</p>
+    <p class="note" style="margin:0">Tap a bit to flip it.</p>
+    <div class="row" style="margin-top:10px" id="dz-btns"></div>
+    <div class="leds" id="dz-leds" aria-live="polite"></div>
+    <div class="out" id="dz-out"></div>
+  </div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 3.1</span></div>
+    <p class="ex-q">A 2-to-4 decoder gets <span class="bx">A1A0</span> = 11. Which output is 1?</p>
+    <ol class="ex-s"><li>11 in binary = 3.</li><li>So <span class="bx">Y3 = A1·A0</span> = 1·1 = 1; every other output has at least one factor that is 0.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">Y3</span>.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 3.2</span></div>
+    <p class="ex-q">A 4-to-16 decoder sits on <span class="bx">A15 A14 A13 A12</span>. The 8051 puts out 8ABCh. Which output fires?</p>
+    <ol class="ex-s"><li>The decoder only sees the top 4 lines, which are the first hex digit (P2): 8.</li><li>8 = 1000 → <span class="bx">Y8</span>.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">Y8</span>. With 4 inputs on <span class="bx">A15–A12</span>, the output number is always the first hex digit.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 3.3</span></div>
+    <p class="ex-q">Same decoder, address B123h?</p>
+    <ol class="ex-s"><li>First hex digit B = 11.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">Y11</span>.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 3.4</span></div>
+    <p class="ex-q">A 3-to-8 decoder sits on <span class="bx">A15 A14 A13</span>. Address 5F00h?</p>
+    <ol class="ex-s"><li>First hex digit 5 = 0101, which is <span class="bx">A15 A14 A13 A12</span> = 0 1 0 1.</li><li>The decoder sees only the top three: 010 = 2.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">Y2</span>.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 3.5</span></div>
+    <p class="ex-q">A 3×8 decoder with active-low enable has <span class="bx">~E</span> = 1 and <span class="bx">A2A1A0</span> = 101. Outputs?</p>
+    <ol class="ex-s"><li>Active-low enable: the decoder works only when <span class="bx">~E</span> = 0.</li><li><span class="bx">~E</span> = 1 → EN = 0 → every <span class="bx">Yi</span> = 0 · m<sub>i</sub> = 0.</li></ol>
+    <p class="ex-a"><b>Answer:</b> all eight outputs are 0.</p></div>
+
+  <article class="paper" id="p-t22b">
+    <p class="ptag">Terminal Exam · 19 Jan 2022 · Q4(b)</p>
+    <h3 style="margin-top:.2em">3×8 decoder with active-low enable</h3>
+    <div class="question"><p>Write the truth table and draw the logic diagram for a 3×8 decoder with active-high outputs and an active-low enable.</p></div>
+    <div class="step"><p><span class="st">Behaviour</span>Active-low enable means the decoder works when <span class="bx">~E</span> = 0. If <span class="bx">~E</span> = 1, all outputs are 0. If <span class="bx">~E</span> = 0, exactly one output <span class="bx">Yi</span> is 1, where i is the binary value of <span class="bx">A2A1A0</span>.</p></div>
+    <div class="step"><p><span class="st">Equations</span>Invert <span class="bx">~E</span> once to get EN. Then every output is a 4-input AND of EN and its minterm:</p>
+      <div class="tw"><table class="mono"><tbody>
+        <tr><td><span class="bx">Y0 = EN·~A2·~A1·~A0</span></td><td><span class="bx">Y4 = EN·A2·~A1·~A0</span></td></tr>
+        <tr><td><span class="bx">Y1 = EN·~A2·~A1·A0</span></td><td><span class="bx">Y5 = EN·A2·~A1·A0</span></td></tr>
+        <tr><td><span class="bx">Y2 = EN·~A2·A1·~A0</span></td><td><span class="bx">Y6 = EN·A2·A1·~A0</span></td></tr>
+        <tr><td><span class="bx">Y3 = EN·~A2·A1·A0</span></td><td><span class="bx">Y7 = EN·A2·A1·A0</span></td></tr>
+      </tbody></table></div></div>
+    <div class="step"><p><span class="st">Truth table</span>x means "doesn't matter".</p>
+      <div class="tw"><table class="mono">
+        <thead><tr><th class="c"><span class="bx">~E</span></th><th class="c"><span class="bx">A2</span></th><th class="c"><span class="bx">A1</span></th><th class="c"><span class="bx">A0</span></th><th class="c"><span class="bx">Y0</span></th><th class="c"><span class="bx">Y1</span></th><th class="c"><span class="bx">Y2</span></th><th class="c"><span class="bx">Y3</span></th><th class="c"><span class="bx">Y4</span></th><th class="c"><span class="bx">Y5</span></th><th class="c"><span class="bx">Y6</span></th><th class="c"><span class="bx">Y7</span></th></tr></thead>
+        <tbody id="tt38"></tbody>
+      </table></div></div>
+    <div class="step"><p><span class="st">Logic diagram</span>Three NOT gates make the complements, one NOT gate turns <span class="bx">~E</span> into EN, and eight 4-input AND gates pick the right combination. A dot means "connected"; a crossing without a dot means the wires don't touch.</p>
+      <div class="circ small" id="logic38"></div></div>
+  </article>
+</section>
+
+<!-- ============ P4 SPLIT ============ -->
+<section id="split">
+  <p class="eyebrow">Prerequisite 4</p>
+  <h2>Splitting an address: which chip, which cell</h2>
+  <p>This is where "a 2<sup>m</sup>-byte module takes <span class="bx">Am−1 … A0</span>" comes from.</p>
+  <h3>The decimal version first</h3>
+  <p>Take 4173 and divide by 100: 4173 = 41 × 100 + 73. Dividing by 100 just chops off the last two digits. The quotient, 41, says <b>which hundred</b> you're in. The remainder, 73, says <b>where you are inside</b> that hundred.</p>
+  <h3>The binary version</h3>
+  <p>Same thing with 2<sup>m</sup> instead of 100. Dividing a binary number by 2<sup>m</sup> chops off its lowest m bits (it shifts the number right by m places). So:</p>
+  <div class="formula">address = Q × 2<sup>m</sup> + R &nbsp;&nbsp; Q = the top n − m bits, &nbsp; R = the lowest m bits</div>
+  <p>Now cut the memory into equal slots of 2<sup>m</sup> bytes. Q tells you <b>which slot</b> the address is in, and R tells you <b>which cell inside</b> that slot. That's why:</p>
+  <ul>
+    <li>A 2<sup>m</sup>-byte module needs m lines to name each of its 2<sup>m</sup> cells (P1), and they must be the <b>lowest</b> m lines, <span class="bx">Am−1 … A0</span>, because those are what change from cell to cell inside one slot.</li>
+    <li>The top n − m lines stay fixed across a whole slot, so they identify the slot. Feed them to a decoder and output <span class="bx">YQ</span> fires for every address in slot Q.</li>
+  </ul>
+
+  <div class="widget" id="splitter">
+    <p class="widget-h">Try it · address splitter (16-bit)</p>
+    <div class="row">
+      <label class="fld" style="flex:1 1 130px">Address (hex)<input id="sp-addr" type="text" value="4ABC" maxlength="5" autocomplete="off" spellcheck="false"></label>
+      <label class="fld" style="flex:1 1 130px">Slot / module size<select id="sp-size">
+        <option value="10">1K (m = 10)</option><option value="11">2K (m = 11)</option><option value="12">4K (m = 12)</option><option value="13">8K (m = 13)</option><option value="14" selected>16K (m = 14)</option><option value="15">32K (m = 15)</option>
+      </select></label>
+    </div>
+    <div id="sp-bits"></div>
+    <div class="legend"><span><span class="sw" style="background:var(--sig-soft);outline:1px solid var(--sig)"></span>to the decoder (which slot)</span><span><span class="sw" style="background:var(--panel-2)"></span>to the module (which cell)</span></div>
+    <div class="out" id="sp-out"></div>
+  </div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 4.1</span></div>
+    <p class="ex-q">With 16K modules in a 64K space, where does 4ABCh go?</p>
+    <ol class="ex-s"><li>16K = 2<sup>14</sup>, so m = 14: the module gets <span class="bx">A13 … A0</span>, the decoder gets <span class="bx">A15 A14</span>.</li><li>4ABCh = 0100 1010 1011 1100. Top two bits: 01 = 1 → slot 1 → <span class="bx">Y1</span> → the second module.</li><li>Low 14 bits: 00 1010 1011 1100 = 0ABCh.</li></ol>
+    <p class="ex-a"><b>Answer:</b> module 2 (slot 1), cell 0ABCh. Check: 1 × 4000h + 0ABCh = 4ABCh. ✓</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 4.2</span></div>
+    <p class="ex-q">With 8K modules, where does C123h go?</p>
+    <ol class="ex-s"><li>8K = 2<sup>13</sup>, m = 13. Decoder gets the top 3 lines <span class="bx">A15 A14 A13</span>.</li><li>C = 1100, so the top three bits are 110 = 6 → <span class="bx">Y6</span> (the 7th module).</li><li>Cell = C123h − 6 × 2000h = C123h − C000h = 0123h.</li></ol>
+    <p class="ex-a"><b>Answer:</b> slot 6, cell 0123h.</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 4.3</span></div>
+    <p class="ex-q">With 4K slots, where does 7F00h go?</p>
+    <ol class="ex-s"><li>4K = 2<sup>12</sup>, m = 12. Decoder gets <span class="bx">A15–A12</span>, which is exactly the first hex digit.</li><li>First digit 7 → slot 7. The other three digits, F00h, are the cell.</li></ol>
+    <p class="ex-a"><b>Answer:</b> slot 7, cell F00h. With 4K slots you can read the slot number straight off the first hex digit, which is why 4K blocks show up so often in past papers.</p></div>
+</section>
+
+<!-- ============ P5 MERGING ============ -->
+<section id="merge">
+  <p class="eyebrow">Prerequisite 5</p>
+  <h2>Merging decoder outputs</h2>
+  <h3>The OR gate is all you need</h3>
+  <p>If a module owns blocks 4, 5, 6 and 7, its CS must be 1 whenever the address is in any of them:</p>
+  <div class="formula"><span class="bx">CS = Y4 + Y5 + Y6 + Y7</span> &nbsp;(+ means OR)</div>
+  <p>Only one Y is ever 1, so this means exactly "the address is somewhere in my blocks". <b>This is always a full-marks answer.</b> Everything below is optional shortening.</p>
+
+  <h3>Optional: shortening the equation</h3>
+  <p>Each Y is a minterm, so an OR of Ys can be simplified with Boolean algebra. This is the same grouping you do on a <b>K-map</b> (Karnaugh map: the grid where you circle 1s in pairs, quads and octets). The one identity behind all of it:</p>
+  <div class="formula">X·A + X·<span class="bx">~A</span> = X·(A + <span class="bx">~A</span>) = X·1 = X</div>
+  <p>Two minterms that differ in only one variable merge into one term, and that variable disappears. A pair drops 1 variable, a quad drops 2, an octet drops 3.</p>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 5.1</span><span class="ex-src">Derivation of a quad</span></div>
+    <p class="ex-q">Simplify <span class="bx">Y4 + Y5 + Y6 + Y7</span> for a 4-to-16 decoder on <span class="bx">A15 A14 A13 A12</span>.</p>
+    <ol class="ex-s">
+      <li>Blocks 4–7 in binary: 0100, 0101, 0110, 0111. The top two bits are always 01.</li>
+      <li>Factor out the common part: <span class="bx">~A15A14·(~A13~A12 + ~A13A12 + A13~A12 + A13A12)</span>.</li>
+      <li>The bracket lists all four combinations of <span class="bx">A13, A12</span>, so it is always 1.</li>
+    </ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">Y4 + Y5 + Y6 + Y7 = ~A15A14</span>.</p></div>
+
+  <h3>The aligned-group test</h3>
+  <p>In a run of 2<sup>j</sup> consecutive block numbers that <b>starts at a multiple of 2<sup>j</sup></b>, the lowest j bits go through every pattern from 00…0 to 11…1 while the higher bits stay fixed. So the lowest j variables drop out and the whole run becomes one AND term. If the run starts anywhere else, the higher bits change partway through, and it won't collapse into one term.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Blocks (4K, lines <span class="bx">A15A14A13A12</span>)</th><th>Aligned?</th><th>CS</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">4,5,6,7 = 0100–0111</td><td>yes: 4 is a multiple of 4 → quad</td><td><span class="bx">~A15A14</span> (drop <span class="bx">A13, A12</span>)</td></tr>
+      <tr><td class="mono">10,11 = 1010, 1011</td><td>yes: 10 is a multiple of 2 → pair</td><td><span class="bx">A15~A14A13</span> (drop <span class="bx">A12</span>)</td></tr>
+      <tr><td class="mono">13,14 = 1101, 1110</td><td>no: 13 is odd</td><td>two terms: <span class="bx">Y13 + Y14</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>Look at why 13, 14 fail: as a pair, their top three bits are 110 and 111, which differ. So no single variable can be dropped.</p>
+
+  <h3>The XOR shortcut (it appears in two papers)</h3>
+  <p><b>XOR</b> (exclusive OR), written A ⊕ B, is 1 when exactly one of A, B is 1. Truth table: 00 → 0, 01 → 1, 10 → 1, 11 → 0. Writing an AND term for each row that gives 1:</p>
+  <div class="formula"><span class="bx">A ^ B = ~A·B + A·~B</span></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 5.2</span><span class="ex-src">Sessional #1 2022</span></div>
+    <p class="ex-q">On <span class="bx">A14 A13 A12 A11</span>, simplify <span class="bx">Y4 + … + Y11</span>.</p>
+    <ol class="ex-s"><li>Blocks 4–7 = 01xx (aligned quad) → <span class="bx">~A14A13</span>.</li><li>Blocks 8–11 = 10xx (aligned quad) → <span class="bx">A14~A13</span>.</li><li>Sum: <span class="bx">~A14A13 + A14~A13</span>, which is the XOR formula.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">A14 ^ A13</span>: "exactly one of <span class="bx">A14, A13</span> is 1".</p></div>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 5.3</span><span class="ex-src">Sessional #1 2022</span></div>
+    <p class="ex-q">Simplify <span class="bx">Y13 + Y14</span> on <span class="bx">A14 A13 A12 A11</span>.</p>
+    <ol class="ex-s"><li>13 = 1101 → <span class="bx">A14A13~A12A11</span>; 14 = 1110 → <span class="bx">A14A13A12~A11</span>.</li><li>Factor out <span class="bx">A14A13</span>: <span class="bx">A14A13(~A12A11 + A12~A11)</span>.</li><li>The bracket is the XOR formula.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">A14A13(A12 ^ A11)</span>.</p></div>
+
+  <h3>If the CS pin is active-low</h3>
+  <p><b>De Morgan's theorem</b> says NOT(X + Y) = <span class="bx">~X</span> · <span class="bx">~Y</span>. So:</p>
+  <ul>
+    <li>Active-high decoder outputs + active-low CS: OR, then NOT. That's one <b>NOR</b> gate.</li>
+    <li>Active-low decoder outputs (<span class="bx">~Ya, ~Yb</span>) + active-low CS: <span class="bx">~CS = ~Ya · ~Yb</span>, an <b>AND</b> gate.</li>
+  </ul>
+  <p>The questions on this page say active-high or give no polarity, so we use active-high throughout.</p>
+</section>
+
+<!-- ============ CLASS METHOD ============ -->
+<section id="class">
+  <p class="eyebrow">The method, part 1</p>
+  <h2>The class method: equal modules</h2>
+  <ol>
+    <li>Total address lines n (64K → n = 16).</li>
+    <li>Module size 2<sup>m</sup> → lines <span class="bx">Am−1 … A0</span> go to <b>every</b> module, together with <span class="bx">~RD</span>, <span class="bx">~WR</span> and <span class="bx">D7–D0</span>.</li>
+    <li>The remaining top n − m lines go to a decoder.</li>
+    <li>Decoder output <span class="bx">Yi</span> = CS of module i.</li>
+  </ol>
+  <p>Where the decoder size comes from: n lines in total, m of them are used inside each module, so the rest choose the module:</p>
+  <div class="formula">k = n − m decoder inputs &nbsp;→&nbsp; a k-to-2<sup>k</sup> decoder, one output per module</div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 6.1</span><span class="ex-src">Class notes</span></div>
+    <p class="ex-q">Build 64K from four 16K modules.</p>
+    <ol class="ex-s"><li>n = 16 (P1).</li><li>16K = 2<sup>14</sup> → m = 14 → each module gets <span class="bx">A13 … A0</span>.</li><li>k = 16 − 14 = 2 → a 2-to-4 decoder on <span class="bx">A15 A14</span>.</li><li><span class="bx">CS1 = Y0, CS2 = Y1, CS3 = Y2, CS4 = Y3</span>.</li></ol>
+    <div class="tw"><table>
+      <thead><tr><th><span class="bx">A15A14</span></th><th>Output</th><th>Module</th><th>Address range</th></tr></thead>
+      <tbody class="mono"><tr><td>00</td><td><span class="bx">Y0</span></td><td>M1</td><td>0000h–3FFFh</td></tr><tr><td>01</td><td><span class="bx">Y1</span></td><td>M2</td><td>4000h–7FFFh</td></tr><tr><td>10</td><td><span class="bx">Y2</span></td><td>M3</td><td>8000h–BFFFh</td></tr><tr><td>11</td><td><span class="bx">Y3</span></td><td>M4</td><td>C000h–FFFFh</td></tr></tbody>
+    </table></div>
+    <div class="circ" data-circuit="c4"></div>
+    <p class="circ-cap">Not drawn, to keep it readable: <span class="bx">A13 … A0</span>, <span class="bx">D7–D0</span>, <span class="bx">~RD</span> and <span class="bx">~WR</span> go to every module in parallel.</p>
+  </div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 6.2</span></div>
+    <p class="ex-q">Build 64K from eight 8K modules.</p>
+    <ol class="ex-s"><li>8K = 2<sup>13</sup> → m = 13 → each module gets <span class="bx">A12 … A0</span>.</li><li>k = 16 − 13 = 3 → a 3-to-8 decoder on <span class="bx">A15 A14 A13</span>.</li><li>Each output covers 8K = 2000h, so the ranges step by 2000h: <span class="bx">Y0</span> = 0000h–1FFFh, <span class="bx">Y1</span> = 2000h–3FFFh, …, <span class="bx">Y7</span> = E000h–FFFFh.</li></ol>
+    <div data-map="c8"></div>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">CSi = Yi−1</span> for i = 1 … 8.</p></div>
+
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 6.3</span></div>
+    <p class="ex-q">Build 32K from two 16K modules.</p>
+    <ol class="ex-s"><li>32K → n = 15. 16K → m = 14 → each module gets <span class="bx">A13 … A0</span>.</li><li>k = 15 − 14 = 1. A "1-to-2 decoder" on <span class="bx">A14</span> is just a wire and a NOT gate.</li></ol>
+    <p class="ex-a"><b>Answer:</b> <span class="bx">CS1 = ~A14</span> (0000h–3FFFh), <span class="bx">CS2 = A14</span> (4000h–7FFFh).</p></div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Module size</th><th>Modules for 64K</th><th>Lines inside</th><th>Decoder on top lines</th></tr></thead>
+    <tbody><tr><td>64K</td><td>1</td><td><span class="bx">A15 … A0</span></td><td>none (CS tied to +5 V)</td></tr><tr><td>32K</td><td>2</td><td><span class="bx">A14 … A0</span></td><td><span class="bx">A15</span> with a NOT gate</td></tr><tr><td>16K</td><td>4</td><td><span class="bx">A13 … A0</span></td><td>2-to-4 on <span class="bx">A15A14</span></td></tr><tr><td>8K</td><td>8</td><td><span class="bx">A12 … A0</span></td><td>3-to-8 on <span class="bx">A15A14A13</span></td></tr></tbody>
+  </table></div>
+  <p>Here one decoder output equals one module, because every module is exactly one slot. That's why class questions feel easy.</p>
+</section>
+
+<!-- ============ WHY HARDER ============ -->
+<section id="harder">
+  <p class="eyebrow">The method, part 2</p>
+  <h2>Why past papers look harder</h2>
+  <p>Look at the 2022 terminal question (the bar at the top of this page): modules of 4K, 16K, 8K and 4K, with gaps between them. Four things change:</p>
+  <div class="tw wrapcell"><table>
+    <thead><tr><th>Thing</th><th>Class question</th><th>Past-paper question</th></tr></thead>
+    <tbody>
+      <tr><td>Module sizes</td><td>all equal</td><td>different (2K, 4K, 8K, 16K, 32K)</td></tr>
+      <tr><td>Memory map</td><td>no gaps; modules touch</td><td>gaps where nothing is connected</td></tr>
+      <tr><td>Start address</td><td>a multiple of the module's size</td><td>sometimes not (a 16K module starting at 8K)</td></tr>
+      <tr><td>CS from decoder</td><td>one output</td><td>several outputs ORed together</td></tr>
+    </tbody>
+  </table></div>
+  <div class="key"><span class="key-l">Why the solution file looked so complicated</span>
+    <p>It jumped straight to the shortcut equations (XOR gates, 3-input ANDs). Those are optional. You can always get the answer with a decoder plus OR gates, exactly in class style, and simplify afterwards only if you want fewer gates.</p></div>
+</section>
+
+<!-- ============ BLOCK METHOD ============ -->
+<section id="block">
+  <p class="eyebrow">The method, part 3</p>
+  <h2>The Block Method: one recipe for every question</h2>
+  <div class="key"><span class="key-l">Idea</span>
+    <p>Cut the whole memory into equal <b>blocks</b> of size B, chosen so that every module is made of a whole number of blocks. Then decode the blocks:</p>
+    <p style="text-align:center"><b>one block = one decoder output</b> &nbsp;⟹&nbsp; <b>CS of a module = OR of the outputs of its blocks</b></p></div>
+
+  <h3>Why B must divide every start address and every size</h3>
+  <p>If it does, every module boundary lands exactly on a block boundary. Then each block is either entirely inside one module or entirely empty, and each decoder output can be handed to exactly one module (or to nobody).</p>
+  <p>If it doesn't, a block straddles a boundary. Example from the 2022 sessional: M2 starts at 6K = 1800h. With 4K blocks, block 1 would be 1000h–1FFFh: half gap (1000h–17FFh), half M2 (1800h–1FFFh). Connecting <span class="bx">Y1</span> to M2 would wrongly select M2 for the gap too.</p>
+  <h3>Why the largest such B</h3>
+  <p>Any smaller power of 2 also divides everything, so it also works, but it cuts memory into more blocks and needs a bigger decoder. The largest B gives the smallest decoder.</p>
+  <h3>Why the decoder gets the top k lines</h3>
+  <p>Block number = address ÷ B. B = 2<sup>b</sup>, and dividing by 2<sup>b</sup> chops off the lowest b bits (P4). What's left is the top n − b lines. So:</p>
+  <div class="formula">k = n − log<sub>2</sub> B decoder inputs, and decoder output index = block number</div>
+  <h3>Why each module still gets its own m lines</h3>
+  <p>The decoder only answers "is this address inside M2?". M2's own lines answer "which of M2's cells?". A 16K module covering four 4K blocks needs all 14 of its lines <span class="bx">A13 … A0</span>; with only 12, its four blocks would land on the same 4K of cells.</p>
+
+  <h3>The 7 steps</h3>
+  <ol class="cheat">
+    <li><b>Address lines.</b> Total memory = 2<sup>n</sup> → lines <span class="bx">An−1 … A0</span>.</li>
+    <li><b>Table.</b> For every module: size, start, end (decimal → hex), and lines inside (2<sup>m</sup> → m lines).</li>
+    <li><b>Block size B.</b> The largest power of 2 that divides every start address and every size (often the smallest module). Decoder inputs: the top k = n − log<sub>2</sub> B lines. <i>Enable trick:</i> if every module has the same value on the top line (2023 paper: <span class="bx">A16</span> = 0 everywhere), feed that line to the decoder's enable instead and use one fewer input.</li>
+    <li><b>Block numbers.</b> Block of an address = address ÷ B. A module covers blocks start ÷ B up to (end + 1) ÷ B − 1.</li>
+    <li><b>Chip selects.</b> <span class="bx">CSi</span> = OR of the decoder outputs of module i's blocks (one block: just a wire). Check that no block belongs to two modules.</li>
+    <li><b>Draw.</b> Lower lines → each module; <span class="bx">~RD</span>, <span class="bx">~WR</span>, <span class="bx">D7–D0</span> → every module; top k lines → decoder; decoder/OR outputs → CS pins. Unused outputs stay unconnected.</li>
+    <li><b>Verify.</b> Test the start, the end, and the address just after the end of each module.</li>
+  </ol>
+
+  <h3>Finding B fast</h3>
+  <p>Write every start and size in K. For each one, find the biggest power of 2 that divides it (skip 0, since 0 is divisible by everything). The <b>smallest</b> of those is B.</p>
+  <div class="ex"><div class="ex-h"><span class="ex-n">Example 7.1</span><span class="ex-src">Sessional #1 2022</span></div>
+    <p class="ex-q">Starts 0, 6, 8, 26 and sizes 2, 2, 16, 4 (all in K). Find B.</p>
+    <ol class="ex-s"><li>Starts: 6 = 2 × 3 → 2; 8 → 8; 26 = 2 × 13 → 2.</li><li>Sizes: 2 → 2; 2 → 2; 16 → 16; 4 → 4.</li><li>Smallest: 2.</li></ol>
+    <p class="ex-a"><b>Answer:</b> B = 2K = 2<sup>11</sup>. With 15 lines, k = 15 − 11 = 4: a 4-to-16 decoder on <span class="bx">A14 A13 A12 A11</span>.</p></div>
+</section>
+
+<!-- ============ PAST PAPERS ============ -->
+<section id="papers">
+  <p class="eyebrow">Past papers</p>
+  <h2>Every past-paper question, solved</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Paper</th><th>Question</th><th>Lines</th><th>B</th><th>Decoder</th></tr></thead>
+    <tbody>
+      <tr><td><a href="#p-s21">Sessional #1, 9 Nov 2021</a></td><td>Q3 (14)</td><td>16</td><td>4K</td><td>4-to-16</td></tr>
+      <tr><td><a href="#p-t22">Terminal, 19 Jan 2022</a></td><td>Q3(b)</td><td>16</td><td>4K</td><td>4-to-16</td></tr>
+      <tr><td><a href="#p-s22">Sessional #1, 25 Oct 2022</a></td><td>Q3 (3 + 12)</td><td>15</td><td>2K</td><td>4-to-16</td></tr>
+      <tr><td><a href="#p-s23">Sessional #2, 4 Dec 2023</a></td><td>Q1 (3 + 12)</td><td>17</td><td>4K</td><td>4-to-16, <span class="bx">A16</span> as enable</td></tr>
+      <tr><td><a href="#p-t22b">Terminal, 19 Jan 2022</a></td><td>Q4(b)</td><td>–</td><td>–</td><td>3×8 with active-low enable (in P3)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="legend"><span><span class="sw" style="background:var(--m1)"></span>M1</span><span><span class="sw" style="background:var(--m2)"></span>M2</span><span><span class="sw" style="background:var(--m3)"></span>M3</span><span><span class="sw" style="background:var(--m4)"></span>M4</span><span><span class="sw" style="background:var(--m5)"></span>M5</span><span><span class="sw" style="background:var(--nc)"></span>unused</span></div>
+
+  <!-- 2021 -->
+  <article class="paper" id="p-s21">
+    <p class="ptag">Sessional #1 · 9 Nov 2021 · Q3 · 14 marks</p>
+    <h3 style="margin-top:.2em">Three modules in 64K</h3>
+    <div class="question"><p>A micro-controller has a 64 KB address space. Interface three memory modules, one of 8 KB and two of 4 KB, so that they occupy the address ranges 0 to 8K − 1, 16K to 20K − 1 and 32K to 36K − 1. Each module has an active-HIGH chip-select pin. Draw the interfacing circuit using a decoder.</p></div>
+    <div class="step"><p><span class="st">Step 1</span>64K = 2<sup>16</sup> → 16 lines, <span class="bx">A15 … A0</span>.</p></div>
+    <div class="step"><p><span class="st">Step 2</span>Convert every boundary with N K = (4N in hex)00: 8K = 2000h, 16K = 4000h, 20K = 5000h, 32K = 8000h, 36K = 9000h. End = next start − 1.</p><div data-table="s21"></div></div>
+    <div class="step"><p><span class="st">Step 3</span>Starts 16, 32 and sizes 8, 4, 4 (in K). Biggest power of 2 dividing each: 16 → 16, 32 → 32, 8 → 8, 4 → 4, 4 → 4. Smallest: 4, so <b>B = 4K = 2<sup>12</sup></b>. k = 16 − 12 = 4 → a <b>4-to-16 decoder on <span class="bx">A15 A14 A13 A12</span></b>.</p></div>
+    <div class="step"><p><span class="st">Step 4</span>With 4K blocks, the block number is just the first hex digit (P4). M1: 0000h–1FFFh → blocks 0, 1. M2: 4000h–4FFFh → block 4. M3: 8000h–8FFFh → block 8.</p></div>
+    <div class="step"><p><span class="st">Step 5</span><span class="bx">CS1 = Y0 + Y1, &nbsp; CS2 = Y4, &nbsp; CS3 = Y8</span>. No block appears twice. ✓</p><div data-map="s21"></div></div>
+    <div class="step"><p><span class="st">Step 6</span></p><div class="circ" data-circuit="s21"></div><p class="circ-cap">Not drawn: each module's lower lines (as labelled), <span class="bx">D7–D0</span>, <span class="bx">~RD</span>, <span class="bx">~WR</span> go to every module. Grey stubs are unconnected outputs.</p></div>
+    <h4>Shorter forms (optional)</h4>
+    <p><span class="bx">Y0 + Y1</span> are blocks 0000 and 0001: an aligned pair, so <span class="bx">A12</span> drops: <span class="bx">CS1 = ~A15~A14~A13</span>. Then <span class="bx">CS2 = ~A15A14~A13~A12</span> and <span class="bx">CS3 = A15~A14~A13~A12</span>, so the circuit also works with only AND gates and inverters.</p>
+    <h4>The book's version: the same method with bigger blocks</h4>
+    <p>The solution file used a 3-to-8 decoder on <span class="bx">A15A14A13</span> (8K blocks). Then <span class="bx">Y0</span> = 0000h–1FFFh is exactly M1. But <span class="bx">Y2</span> (4000h–5FFFh) and <span class="bx">Y4</span> (8000h–9FFFh) are 8K, while M2 and M3 are only 4K. Each sits in the lower half of its slice, where <span class="bx">A12</span> = 0, so the book patches it: <span class="bx">CS2 = Y2·~A12</span>, <span class="bx">CS3 = Y4·~A12</span>. Both versions are correct. The patch is needed because 8K doesn't divide the 4K sizes; the Block Method's choice of B avoids it.</p>
+    <div class="final"><span class="key-l">Final answer</span>
+      <p><span class="bx">A12 … A0</span> → M1; <span class="bx">A11 … A0</span> → M2 and M3; <span class="bx">A15A14A13A12</span> → 4-to-16 decoder.</p>
+      <p><span class="bx">CS1 = Y0 + Y1</span> (0000h–1FFFh), <span class="bx">CS2 = Y4</span> (4000h–4FFFh), <span class="bx">CS3 = Y8</span> (8000h–8FFFh).</p></div>
+    <h4><span class="st">Step 7</span>Verify</h4><ul class="verify" data-verify="s21"></ul>
+  </article>
+
+  <!-- 2022 terminal -->
+  <article class="paper" id="p-t22">
+    <p class="ptag">Terminal Exam · 19 Jan 2022 · Q3(b)</p>
+    <h3 style="margin-top:.2em">Four modules with gaps</h3>
+    <div class="question"><p>A microcontroller generates a 16-bit address to access a maximum of 64 KB. Four memory modules are interfaced: 4 KB (address 0 to 4K − 1), 16 KB (16K to 32K − 1), 8 KB (40K to 48K − 1) and the last 4 KB (60K to 64K − 1). Draw the circuit diagram for address decoding.</p></div>
+    <div class="step"><p><span class="st">Step 1</span>16 lines, <span class="bx">A15 … A0</span>.</p></div>
+    <div class="step"><p><span class="st">Step 2</span>4K = 1000h, 16K = 4000h, 32K = 8000h, 40K = A000h, 48K = C000h, 60K = F000h.</p><div data-table="t22"></div></div>
+    <div class="step"><p><span class="st">Step 3</span>Starts: 16 → 16, 40 = 8 × 5 → 8, 60 = 4 × 15 → 4. Sizes: 4, 16, 8, 4 → 4, 16, 8, 4. Smallest: 4 → <b>B = 4K</b>, k = 16 − 12 = 4 → <b>4-to-16 decoder on <span class="bx">A15A14A13A12</span></b>.</p></div>
+    <div class="step"><p><span class="st">Step 4</span>Blocks = first hex digit. M1 → 0. M2 → 4, 5, 6, 7. M3 → A = 10, B = 11. M4 → F = 15. Blocks 1, 2, 3, 8, 9, 12, 13, 14 are unused.</p></div>
+    <div class="step"><p><span class="st">Step 5</span><span class="bx">CS1 = Y0, &nbsp; CS2 = Y4 + Y5 + Y6 + Y7, &nbsp; CS3 = Y10 + Y11, &nbsp; CS4 = Y15</span></p><div data-map="t22"></div></div>
+    <div class="step"><p><span class="st">Step 6</span></p><div class="circ" data-circuit="t22"></div><p class="circ-cap">Not drawn: each module's lower lines, <span class="bx">D7–D0</span>, <span class="bx">~RD</span>, <span class="bx">~WR</span> go to every module.</p></div>
+    <h4>Shorter forms (optional): these are the book's equations</h4>
+    <p>Blocks 4–7 = 01xx, an aligned quad → <span class="bx">CS2 = ~A15A14</span>. Blocks 10, 11 = 101x, an aligned pair → <span class="bx">CS3 = A15~A14A13</span>. <span class="bx">CS1 = ~A15~A14~A13~A12</span> is a 4-input NOR gate on <span class="bx">A15–A12</span> (NOR gives 1 only when every input is 0), and <span class="bx">CS4 = A15A14A13A12</span> is a 4-input AND.</p>
+    <div class="final"><span class="key-l">Final answer</span>
+      <p><span class="bx">CS1 = Y0, &nbsp; CS2 = Y4 + Y5 + Y6 + Y7 = ~A15A14, &nbsp; CS3 = Y10 + Y11 = A15~A14A13, &nbsp; CS4 = Y15</span>.</p>
+      <p>Modules use 12, 14, 13 and 12 internal lines; <span class="bx">~RD</span> and <span class="bx">~WR</span> go to all modules.</p></div>
+    <h4><span class="st">Step 7</span>Verify</h4><ul class="verify" data-verify="t22"></ul>
+  </article>
+
+  <!-- 2022 sessional -->
+  <article class="paper" id="p-s22">
+    <p class="ptag">Sessional #1 · 25 Oct 2022 · Q3 · 15 = 3 + 12 marks</p>
+    <h3 style="margin-top:.2em">The 2K trap</h3>
+    <div class="question"><p>A micro-controller has a code memory space of 32K × 1 byte.</p><p>(a) How many address lines are needed to access each of the 32 KB locations uniquely?</p><p>(b) Interface these modules at the given addresses and propose the address-line scheme with block diagrams: 2K at 0 to 2K − 1; 2K at 6K to 8K − 1; 16K at 8K to 24K − 1; 4K at 26K to 30K − 1.</p></div>
+    <div class="step"><p><span class="st">(a)</span>32K = 2<sup>5</sup> · 2<sup>10</sup> = 2<sup>15</sup> → <b>15 address lines</b>, <span class="bx">A14 … A0</span> (Example 1.1).</p></div>
+    <div class="step"><p><span class="st">Step 2</span>2K = 0800h, 6K = 1800h, 8K = 2000h, 24K = 6000h, 26K = 6800h, 30K = 7800h.</p><div data-table="s22"></div></div>
+    <div class="step"><p><span class="st">Step 3 · the trap</span>Starts 6 and 26 are not multiples of 4: 6 → 2, 26 → 2. So 4K blocks don't work, and <b>B = 2K = 2<sup>11</sup></b>. k = 15 − 11 = 4 → <b>4-to-16 decoder on <span class="bx">A14A13A12A11</span></b>.</p></div>
+    <div class="step"><p><span class="st">Step 4</span>Block = address ÷ 2K. Since 2K = 0800h, blocks start at 0000h, 0800h, 1000h, 1800h, … M1: 0 ÷ 2 = 0. M2: 6 ÷ 2 = 3. M3: 8 ÷ 2 = 4 up to 24 ÷ 2 − 1 = 11. M4: 26 ÷ 2 = 13 up to 30 ÷ 2 − 1 = 14. Blocks 1, 2, 12, 15 are unused.</p></div>
+    <div class="step"><p><span class="st">Step 5</span><span class="bx">CS1 = Y0, &nbsp; CS2 = Y3, &nbsp; CS3 = Y4 + Y5 + … + Y11, &nbsp; CS4 = Y13 + Y14</span></p><div data-map="s22"></div></div>
+    <div class="step"><p><span class="st">Step 6</span></p><div class="circ" data-circuit="s22"></div><p class="circ-cap">Not drawn: each module's lower lines, <span class="bx">D7–D0</span>, <span class="bx">~RD</span>, <span class="bx">~WR</span> go to every module.</p></div>
+    <h4>Shorter forms (optional): the book's equations and where they come from</h4>
+    <p>Blocks 4–7 = 01xx and 8–11 = 10xx are two aligned quads: <span class="bx">~A14A13 + A14~A13</span>, so <span class="bx">CS3 = A14 ^ A13</span> (Example 5.2). Blocks 13 = 1101 and 14 = 1110 are not an aligned pair, so <span class="bx">CS4 = A14A13~A12A11 + A14A13A12~A11 = A14A13(A12 ^ A11)</span> (Example 5.3). Also <span class="bx">CS1 = ~A14~A13~A12~A11</span> and <span class="bx">CS2 = ~A14~A13A12A11</span>.</p>
+    <div class="key"><span class="key-l">Heads-up: modules that start "off-grid"</span>
+      <p>M3 is 16K but starts at 8K, and M4 is 4K but starts at 26K. Neither start is a multiple of its own size. M3 uses <span class="bx">A13 … A0</span>, so address 2000h reaches its internal cell 2000h and 4000h reaches cell 0000h. M4 uses <span class="bx">A11 … A0</span>: 6800h reaches cell 800h and 7000h reaches cell 000h. Every address still hits a different cell, so the design is correct; the data are just stored "rotated". The exam doesn't ask about this.</p></div>
+    <div class="final"><span class="key-l">Final answer</span>
+      <p>(a) 15 lines. (b) <span class="bx">CS1 = Y0, &nbsp; CS2 = Y3, &nbsp; CS3 = Y4 + … + Y11 = A14 ^ A13, &nbsp; CS4 = Y13 + Y14 = A14A13(A12 ^ A11)</span>.</p>
+      <p>Lines inside: 11, 11, 14, 12. Blocks 1, 2, 12, 15 select nothing.</p></div>
+    <h4><span class="st">Step 7</span>Verify</h4><ul class="verify" data-verify="s22"></ul>
+  </article>
+
+  <!-- 2023 -->
+  <article class="paper" id="p-s23">
+    <p class="ptag">Sessional #2 · 4 Dec 2023 · Q1 · 15 = 3 + 12 marks</p>
+    <h3 style="margin-top:.2em">128K space, A16 as enable</h3>
+    <div class="question"><p>A microcontroller can interface up to 128 KB of memory. Modules: 8K at 0 to 8K − 1; 16K at 8K to 24K − 1; 32K at 24K to 56K − 1; 4K at 56K to 60K − 1; 4K at 60K to 64K − 1.</p><p>(a) How many address lines are needed for the complete memory space? (b) Draw the interfacing block diagram showing the address-decoding scheme, with all inputs, outputs and signals.</p></div>
+    <div class="step"><p><span class="st">(a)</span>128K = 2<sup>7</sup> · 2<sup>10</sup> = 2<sup>17</sup> → <b>17 lines</b>, <span class="bx">A16 … A0</span>.</p></div>
+    <div class="step"><p><span class="st">Step 2</span>17 lines → 5 hex digits. 8K = 02000h, 24K = 06000h, 56K = 0E000h, 60K = 0F000h, 64K = 10000h.</p><div data-table="s23"></div></div>
+    <div class="step"><p><span class="st">Step 3</span>Starts: 8 → 8, 24 = 8 × 3 → 8, 56 = 8 × 7 → 8, 60 = 4 × 15 → 4. Sizes: 8, 16, 32, 4, 4. Smallest: 4 → <b>B = 4K = 2<sup>12</sup></b>. That gives k = 17 − 12 = 5, a 5-to-32 decoder. But every module ends by 64K − 1 = 0FFFFh, so <span class="bx">A16</span> = 0 for every module. <b>Enable trick:</b> use a 4-to-16 decoder on <span class="bx">A15A14A13A12</span> and connect <span class="bx">A16</span> to its active-low enable. When <span class="bx">A16</span> = 1 (the upper 64K), the decoder is off and nothing is selected.</p></div>
+    <div class="step"><p><span class="st">Step 4</span>Block = the first hex digit after the leading 0. M1 → 0, 1. M2 → 2 to 5. M3 → 6 to 13 (6h … Dh). M4 → 14 (Eh). M5 → 15 (Fh).</p></div>
+    <div class="step"><p><span class="st">Step 5</span><span class="bx">CS1 = Y0 + Y1, &nbsp; CS2 = Y2 + … + Y5, &nbsp; CS3 = Y6 + … + Y13, &nbsp; CS4 = Y14, &nbsp; CS5 = Y15</span>. All of them already include <span class="bx">~A16</span>, because the decoder is enabled only when <span class="bx">A16</span> = 0.</p><div data-map="s23"></div></div>
+    <div class="step"><p><span class="st">Step 6</span></p><div class="circ" data-circuit="s23"></div><p class="circ-cap">The bubble on E means active-low: the decoder runs only when <span class="bx">A16</span> = 0. Not drawn: lower lines, <span class="bx">D7–D0</span>, <span class="bx">~RD</span>, <span class="bx">~WR</span> to every module.</p></div>
+    <h4>Shorter forms (optional): the book's equations, each also containing <span class="bx">~A16</span></h4>
+    <ul>
+      <li><span class="bx">CS1</span>: blocks 0, 1 = 000x, an aligned pair → <span class="bx">~A15~A14~A13</span>.</li>
+      <li><span class="bx">CS2</span>: blocks 2–5 = 0010, 0011, 0100, 0101 → pairs 001x and 010x → <span class="bx">~A15~A14A13 + ~A15A14~A13 = ~A15(A14 ^ A13)</span>.</li>
+      <li><span class="bx">CS3</span>: blocks 6–13. K-map groups: 011x, 10xx, 1x0x → <span class="bx">~A15A14A13 + A15~A14 + A15~A13</span>. The book writes this as <span class="bx">A15 ^ (A14A13)</span>. Check: when <span class="bx">A15</span> = 0 it equals <span class="bx">A14A13</span> (blocks 6, 7); when <span class="bx">A15</span> = 1 it equals NOT(<span class="bx">A14A13</span>) (blocks 8–13). ✓</li>
+      <li><span class="bx">CS4 = A15A14A13~A12</span>, &nbsp;<span class="bx">CS5 = A15A14A13A12</span>.</li>
+    </ul>
+    <div class="final"><span class="key-l">Final answer</span>
+      <p>(a) 17 lines. (b) 4-to-16 decoder on <span class="bx">A15 … A12</span>, active-low enable = <span class="bx">A16</span>.</p>
+      <p><span class="bx">CS1 = Y0 + Y1, &nbsp; CS2 = Y2 + … + Y5, &nbsp; CS3 = Y6 + … + Y13, &nbsp; CS4 = Y14, &nbsp; CS5 = Y15</span>.</p>
+      <p>Lines inside: 13, 14, 15, 12, 12. The upper half (64K to 128K − 1) is unused.</p></div>
+    <h4><span class="st">Step 7</span>Verify</h4><ul class="verify" data-verify="s23"></ul>
+  </article>
+</section>
+
+<!-- ============ MACHINE ============ -->
+<section id="machine">
+  <p class="eyebrow">Tool</p>
+  <h2>The Block Method machine</h2>
+  <p>Pick a question or type your own modules. It runs all seven steps, draws the block map and the circuit, and tests any address you type. Use it to check your practice answers, not to replace doing them.</p>
+  <div class="widget" id="mach">
+    <div class="row">
+      <label class="fld" style="flex:2 1 200px">Load a question<select id="m-preset"></select></label>
+      <label class="fld" style="flex:1 1 140px">Address space<select id="m-total">
+        <option value="16">16K (14 lines)</option><option value="32">32K (15 lines)</option><option value="64">64K (16 lines)</option><option value="128">128K (17 lines)</option>
+      </select></label>
+    </div>
+    <div class="mrows" id="m-rows"></div>
+    <button class="btn ghost" id="m-add" type="button">+ Add module</button>
+    <div class="report" id="m-out"></div>
+    <h4><span class="st">Test</span>Type an address</h4>
+    <label class="fld" style="max-width:220px">Address (hex)<input id="m-addr" type="text" value="5F00" autocomplete="off" spellcheck="false"></label>
+    <div class="probe-out" id="m-probe" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ PRACTICE ============ -->
+<section id="practice">
+  <p class="eyebrow">Practice</p>
+  <h2>Your turn</h2>
+  <p>Do each one on paper first: table → B → blocks → CS → diagram. Then open the solution.</p>
+
+  <div class="practice"><div class="ex-h"><span class="ex-n">Practice A</span><span class="ex-src">16K space · uses a 3-to-8 decoder</span></div>
+    <p>A processor has a 14-bit address. Interface: 2K at 0 to 2K − 1; 4K at 2K to 6K − 1; 8K at 8K to 16K − 1. Find the lines inside each module, the decoder, and the chip selects.</p>
+    <details class="sol"><summary>Show the full solution</summary>
+      <p class="note">Key move: the 2K start forces B = 2K, leaving only 3 decoder inputs. Blocks 1, 2 (001, 010) are not an aligned pair, so <span class="bx">CS2</span> comes out as an XOR form.</p>
+      <div data-report="pa"></div>
+      <button class="btn ghost" type="button" data-load="pa">Open in the machine</button></details></div>
+
+  <div class="practice"><div class="ex-h"><span class="ex-n">Practice B</span><span class="ex-src">64K space · gap at the start</span></div>
+    <p>Interface: 4K at 4K to 8K − 1; 8K at 16K to 24K − 1; 4K at 28K to 32K − 1; 16K at 48K to 64K − 1. Find the decoder and chip selects.</p>
+    <details class="sol"><summary>Show the full solution</summary>
+      <p class="note">Key move: nothing lives at 0000h, so block 0 stays unconnected. The 16K module at 48K is an aligned quad (blocks 12–15 = 11xx).</p>
+      <div data-report="pb"></div>
+      <button class="btn ghost" type="button" data-load="pb">Open in the machine</button></details></div>
+
+  <div class="practice"><div class="ex-h"><span class="ex-n">Practice C</span><span class="ex-src">32K space · one awkward start</span></div>
+    <p>A micro-controller has 32 KB of code memory. Interface: 4K at 0 to 4K − 1; 8K at 8K to 16K − 1; 2K at 18K to 20K − 1; 8K at 24K to 32K − 1. Give the number of address lines, the table with hex ranges, the decoder, and all chip selects.</p>
+    <details class="sol"><summary>Show the full solution</summary>
+      <p class="note">Key move: 18 = 2 × 9, so B = 2K even though no other value needs it. Hex for 18K: 4 × 18 = 72 = 48h → 4800h.</p>
+      <div data-report="pc"></div>
+      <button class="btn ghost" type="button" data-load="pc">Open in the machine</button></details></div>
+
+  <div class="practice"><div class="ex-h"><span class="ex-n">Practice D</span><span class="ex-src">128K space · everything in the upper half</span></div>
+    <p>A microcontroller can address 128 KB. Interface: 16K at 64K to 80K − 1; 8K at 80K to 88K − 1; 4K at 96K to 100K − 1; 4K at 124K to 128K − 1. Draw the decoding scheme.</p>
+    <details class="sol"><summary>Show the full solution</summary>
+      <p class="note">Key move: every module has <span class="bx">A16</span> = 1, so the enable must be active-high (or feed <span class="bx">A16</span> through a NOT gate into an active-low enable). Inside the upper half, block numbers restart from 0.</p>
+      <div data-report="pd"></div>
+      <button class="btn ghost" type="button" data-load="pd">Open in the machine</button></details></div>
+</section>
+
+<!-- ============ CHEAT SHEET ============ -->
+<section id="cheat" class="cheat">
+  <p class="eyebrow">Reference</p>
+  <h2>Exam cheat sheet</h2>
+  <div class="key"><span class="key-l">One-page summary</span>
+  <ol>
+    <li>n = log<sub>2</sub>(memory size). A 2<sup>m</sup> module uses <span class="bx">Am−1 … A0</span>.</li>
+    <li>Table: size, start, end (hex). End = next start − 1. 1K = 0400h, and N K = (4N in hex) followed by 00.</li>
+    <li>B = largest power of 2 dividing all starts and sizes. Decoder on the top k = n − log<sub>2</sub> B lines. If the top line is the same for every module, make it the enable.</li>
+    <li>Blocks: start ÷ B up to (end + 1) ÷ B − 1.</li>
+    <li><span class="bx">CSi</span> = OR of the module's decoder outputs. Optional: merge aligned groups (pair drops 1 line, quad drops 2, octet drops 3).</li>
+    <li>Draw: lower lines + <span class="bx">~RD</span> + <span class="bx">~WR</span> + <span class="bx">D7–D0</span> to every module; top lines to the decoder; unused outputs unconnected.</li>
+    <li>Verify start, end, and the address after the end.</li>
+  </ol></div>
+  <h3>Common mistakes</h3>
+  <ul>
+    <li>Choosing a block size larger than a module, or one that doesn't divide a start address (the 2022 question: 6K and 26K need 2K blocks).</li>
+    <li>Forgetting that end = start + size − 1 (4FFFh, not 5000h).</li>
+    <li>Sending the top lines to the modules, or the lower lines to the decoder. A module takes only its own m lines.</li>
+    <li>Forgetting <span class="bx">~RD</span> and <span class="bx">~WR</span> on every module.</li>
+    <li>Giving one block to two modules: their CS would be active together (bus conflict).</li>
+    <li>Writing 1K = 1000 instead of 1024 = 0400h.</li>
+    <li>In a 128K question: forgetting that <span class="bx">A16</span> = 1 must switch everything off.</li>
+  </ul>
+  <h3>What to write in the exam</h3>
+  <p>Draw the decoder + OR gates diagram (safe, class style), write the table with hex ranges, and give the CS equations. Add the shortcut form if you have time.</p>
+  <footer>Every map, circuit, equation and verify line on this page is generated by the same solver as the machine, and each shortened equation was checked against every address of its memory space.</footer>
+</section>
+
+</main>
+
+<script>
+(function(){
+'use strict';
+const hx=(v,d)=>v.toString(16).toUpperCase().padStart(d,'0');
+const isPow2=x=>Number.isInteger(x)&&x>0&&(x&(x-1))===0;
+const lg=x=>Math.round(Math.log2(x));
+const tz=x=>{let c=0;while(x>0&&x%2===0){x/=2;c++;}return c;};
+const pc=x=>{let c=0;while(x){c+=x&1;x>>>=1;}return c;};
+
+function bx(s){
+  return s.replace(/\^/g,' ⊕ ').replace(/(~)?(CS|RD|WR|EN|A|B|Y|D|E|X)(\d+|[mniabQ](?:[−-]\d)?)?/g,function(_,neg,v,d){
+    const core=v+(d?'<sub>'+d+'</sub>':'');
+    return neg?'<span class="ov">'+core+'</span>':core;
+  });
+}
+const R=s=>'<span class="bxr">'+bx(s)+'</span>';
+
+const PRESETS={
+  s21:{name:'Sessional #1 2021, Q3',total:64,mods:[[8,0],[4,16],[4,32]]},
+  t22:{name:'Terminal 2022, Q3(b)',total:64,mods:[[4,0],[16,16],[8,40],[4,60]]},
+  s22:{name:'Sessional #1 2022, Q3',total:32,mods:[[2,0],[2,6],[16,8],[4,26]]},
+  s23:{name:'Sessional #2 2023, Q1',total:128,mods:[[8,0],[16,8],[32,24],[4,56],[4,60]]},
+  c4:{name:'Class: four 16K in 64K',total:64,mods:[[16,0],[16,16],[16,32],[16,48]]},
+  c8:{name:'Class: eight 8K in 64K',total:64,mods:[[8,0],[8,8],[8,16],[8,24],[8,32],[8,40],[8,48],[8,56]]},
+  c2:{name:'Class: two 16K in 32K',total:32,mods:[[16,0],[16,16]]},
+  pa:{name:'Practice A',total:16,mods:[[2,0],[4,2],[8,8]]},
+  pb:{name:'Practice B',total:64,mods:[[4,4],[8,16],[4,28],[16,48]]},
+  pc:{name:'Practice C',total:32,mods:[[4,0],[8,8],[2,18],[8,24]]},
+  pd:{name:'Practice D',total:128,mods:[[16,64],[8,80],[4,96],[4,124]]}
+};
+
+function solve(totalK,mods){
+  const errors=[];
+  if(!isPow2(totalK)) errors.push('The address space must be a power of 2.');
+  if(!mods.length) errors.push('Add at least one module.');
+  const n=10+lg(totalK), digits=Math.ceil(n/4), total=totalK*1024;
+  const M=mods.map(function(md,i){
+    const sizeK=md[0], startK=md[1];
+    const m={i:i,sizeK:sizeK,startK:startK,size:sizeK*1024,start:startK*1024};
+    if(!isPow2(sizeK)) errors.push('M'+(i+1)+': the size must be a power of 2 (1K, 2K, 4K, …).');
+    if(!Number.isInteger(startK)||startK<0) errors.push('M'+(i+1)+': the start must be a whole number of K, 0 or more.');
+    else if(startK+sizeK>totalK) errors.push('M'+(i+1)+' runs past the end of the '+totalK+'K space (it would end at '+(startK+sizeK)+'K − 1).');
+    m.end=m.start+m.size-1; m.m=10+lg(sizeK); m.rotated=(m.start%m.size)!==0;
+    return m;
+  });
+  for(let a=0;a<M.length;a++)for(let b=a+1;b<M.length;b++){const A=M[a],B=M[b];if(A.start<=B.end&&B.start<=A.end)errors.push('M'+(a+1)+' and M'+(b+1)+' overlap, so some addresses would select two chips (bus conflict).');}
+  if(errors.length) return {errors:errors};
+  let e=lg(totalK); const div=[];
+  M.forEach(function(m){if(m.startK>0){const t=tz(m.startK);div.push({kind:'start',v:m.startK,p:Math.pow(2,t)});e=Math.min(e,t);}});
+  M.forEach(function(m){const t=tz(m.sizeK);div.push({kind:'size',v:m.sizeK,p:Math.pow(2,t)});e=Math.min(e,t);});
+  const BK=Math.pow(2,e), b=10+e, k=n-b, Bb=Math.pow(2,b);
+  M.forEach(function(m){m.first=m.start/Bb;m.last=(m.end+1)/Bb-1;});
+  let used=[]; M.forEach(function(m){for(let x=m.first;x<=m.last;x++)used.push(x);});
+  const enables=[]; let kk=k;
+  while(kk>4){
+    const bit=kk-1; const vals=new Set(used.map(function(x){return (x>>bit)&1;}));
+    if(vals.size!==1) break;
+    const v=vals.values().next().value;
+    enables.push({line:b+bit,val:v});
+    used=used.map(function(x){return x&((1<<bit)-1);}); kk--;
+  }
+  const mask=(1<<kk)-1, L=[];
+  for(let j=0;j<kk;j++) L.push(b+kk-1-j);
+  const owner=new Array(1<<kk).fill(-1);
+  M.forEach(function(m){m.outs=[];for(let x=m.first;x<=m.last;x++)m.outs.push(x&mask);m.outs.forEach(function(o){owner[o]=m.i;});});
+  const S={n:n,digits:digits,total:total,totalK:totalK,M:M,BK:BK,b:b,Bb:Bb,k:k,kk:kk,enables:enables,lines:L,owner:owner,div:div};
+  M.forEach(function(m){m.sop=minimize(m.outs,kk);});
+  return S;
+}
+
+function minimize(ms,k){
+  if(!ms.length) return [];
+  const all=1<<k, uniq=[...new Set(ms)];
+  if(uniq.length===all) return [{v:0,d:all-1,c:uniq}];
+  let cur=uniq.map(function(m){return {v:m,d:0,c:[m]};});
+  const primes=[];
+  while(cur.length){
+    const next=new Map(), usedI=new Set();
+    for(let i=0;i<cur.length;i++)for(let j=i+1;j<cur.length;j++){
+      const a=cur[i],q=cur[j]; if(a.d!==q.d) continue;
+      const diff=a.v^q.v;
+      if(diff&&(diff&(diff-1))===0){
+        usedI.add(i);usedI.add(j);
+        const v=a.v&~diff,d=a.d|diff,key=v+'|'+d;
+        if(!next.has(key)) next.set(key,{v:v,d:d,c:[...new Set(a.c.concat(q.c))]});
+      }
+    }
+    cur.forEach(function(t,i){if(!usedI.has(i))primes.push(t);});
+    cur=[...next.values()];
+  }
+  const P=[],seen=new Set();
+  primes.forEach(function(p){const key=p.v+'|'+p.d;if(!seen.has(key)){seen.add(key);P.push(p);}});
+  const rem=new Set(uniq), chosen=[];
+  uniq.forEach(function(m){const cov=P.filter(function(p){return p.c.indexOf(m)>=0;});if(cov.length===1&&chosen.indexOf(cov[0])<0)chosen.push(cov[0]);});
+  chosen.forEach(function(p){p.c.forEach(function(m){rem.delete(m);});});
+  while(rem.size){
+    let best=null,bestN=-1;
+    P.forEach(function(p){if(chosen.indexOf(p)>=0)return;const nc=p.c.filter(function(m){return rem.has(m);}).length;if(nc>bestN||(nc===bestN&&best&&pc(p.d)>pc(best.d))){best=p;bestN=nc;}});
+    chosen.push(best); best.c.forEach(function(m){rem.delete(m);});
+  }
+  return chosen.sort(function(a,b){return a.v-b.v;});
+}
+function termStr(t,L,k){let s='';for(let j=0;j<k;j++){const bit=k-1-j;if((t.d>>bit)&1)continue;s+=(((t.v>>bit)&1)?'':'~')+'A'+L[j];}return s||'1';}
+function xorForm(a,q,L,k){
+  if(a.d!==q.d) return null;
+  const diff=a.v^q.v; if(pc(diff)!==2) return null;
+  const bits=[]; for(let bit=k-1;bit>=0;bit--) if((diff>>bit)&1) bits.push(bit);
+  const p=bits[0],r=bits[1], ap=(a.v>>p)&1, ar=(a.v>>r)&1;
+  const common=termStr({v:a.v&~diff,d:a.d|diff},L,k);
+  const x='A'+L[k-1-p]+(ap!==ar?' ^ ':' ⊙ ')+'A'+L[k-1-r];
+  return common==='1'?x:common+'('+x+')';
+}
+function sopStr(terms,S){
+  const en=S.enables.map(function(e){return (e.val?'':'~')+'A'+e.line;}).join('');
+  let core=null;
+  if(terms.length===2) core=xorForm(terms[0],terms[1],S.lines,S.kk);
+  if(!core) core=terms.map(function(t){return termStr(t,S.lines,S.kk);}).join(' + ');
+  if(!en) return core;
+  if(core==='1') return en;
+  const needs=core.indexOf('+')>=0||((core.indexOf('^')>=0||core.indexOf('⊙')>=0)&&core.indexOf('(')<0);
+  return en+(needs?'('+core+')':core);
+}
+function orStr(outs){const o=outs.slice().sort(function(a,b){return a-b;});if(o.length<=4)return o.map(function(x){return 'Y'+x;}).join(' + ');return 'Y'+o[0]+' + Y'+o[1]+' + … + Y'+o[o.length-1];}
+
+function tableHTML(S){
+  let r='<div class="tw"><table><thead><tr><th>Module</th><th>Size</th><th>Range (K)</th><th>Range (hex)</th><th>Lines inside</th></tr></thead><tbody>';
+  S.M.forEach(function(m){
+    r+='<tr><td><span class="dot m'+(m.i+1)+'"></span>M'+(m.i+1)+'</td><td>'+m.sizeK+'K</td><td class="mono">'+m.startK+'K → '+(m.startK+m.sizeK)+'K − 1</td><td class="mono">'+hx(m.start,S.digits)+'h – '+hx(m.end,S.digits)+'h</td><td>'+R('A'+(m.m-1)+' … A0')+' ('+m.m+')</td></tr>';
+  });
+  return r+'</tbody></table></div>';
+}
+function enBase(S){return S.enables.reduce(function(s,e){return s+e.val*Math.pow(2,e.line);},0);}
+function mapHTML(S,hl){
+  const N=1<<S.kk; if(N>64) return '<p class="note">Too many blocks to draw a map.</p>';
+  const base=enBase(S);
+  let h='<div class="bmap'+(N>=16?' w16':'')+'" style="--c-sm:'+Math.min(N,8)+'" role="list" aria-label="Block map">';
+  for(let i=0;i<N;i++){
+    const o=S.owner[i], st=base+i*S.Bb;
+    h+='<div role="listitem" class="cell '+(o>=0?'m'+(o+1):'nc')+(hl===i?' hl':'')+'"><span class="y">'+(S.kk?'Y<sub>'+i+'</sub>':'+5V')+'</span><span class="mm">'+(o>=0?'M'+(o+1):'–')+'</span><span class="h">'+hx(st,S.digits)+'</span></div>';
+  }
+  h+='</div>';
+  if(S.enables.length) h+='<p class="note">These are the decoder outputs when '+S.enables.map(function(e){return R('A'+e.line)+' = '+e.val;}).join(', ')+'. Otherwise the decoder is off and nothing is selected.</p>';
+  return h;
+}
+
+function modBox(S,m,x,yc,w,h){
+  const c=m.i+1;
+  return '<rect class="w s-m'+c+' f-m'+c+'" x="'+x+'" y="'+(yc-h/2)+'" width="'+w+'" height="'+h+'" rx="5"/>'+
+  '<text x="'+(x+7)+'" y="'+(yc+3.5)+'" font-size="9" font-weight="600" class="mono">CS</text>'+
+  '<text x="'+(x+32)+'" y="'+(yc-7)+'" font-size="12" font-weight="700">M'+c+' · '+m.sizeK+'K</text>'+
+  '<text x="'+(x+32)+'" y="'+(yc+7)+'" font-size="10.5" class="mono">'+hx(m.start,S.digits)+'–'+hx(m.end,S.digits)+'</text>'+
+  '<text x="'+(x+32)+'" y="'+(yc+19)+'" font-size="9.5" class="mono muted">A'+(m.m-1)+' … A0</text>';
+}
+function circuitSVG(S){
+  const kk=S.kk, N=1<<kk;
+  if(kk===0){
+    return '<svg class="sv" viewBox="0 0 420 70" role="img" aria-label="No decoder: CS tied to +5 V"><text x="12" y="39" font-size="12" font-weight="600" class="mono">+5 V</text><path class="w s-m1" d="M52 35 H230"/>'+modBox(S,S.M[0],230,35,170,50)+'</svg>';
+  }
+  if(N>32) return null;
+  const row=N<=2?40:N<=4?34:N<=8?28:N<=16?24:18;
+  const top=34, decX=124, decW=72, decH=N*row+16;
+  const yO=function(i){return top+8+row*(i+0.5);};
+  const nEn=S.enables.length;
+  const inGap=Math.min(26,(decH-30-nEn*24)/Math.max(kk,1));
+  const yI=function(j){return top+16+j*inGap;};
+  const yE=function(j){return top+decH-14-j*22;};
+  const mcuX=8,mcuW=52,gX=262,gW=34,bX=362,bW=170,bH=50;
+  let s='';
+  s+='<rect class="w s-ink f-panel" x="'+mcuX+'" y="'+top+'" width="'+mcuW+'" height="'+decH+'" rx="4"/>';
+  s+='<text x="'+(mcuX+mcuW/2)+'" y="'+(top+decH/2-2)+'" text-anchor="middle" font-size="12" font-weight="700" class="mono">8051</text>';
+  s+='<text x="'+(mcuX+mcuW/2)+'" y="'+(top+decH/2+12)+'" text-anchor="middle" font-size="9" class="muted">µC</text>';
+  s+='<rect class="w s-ink f-dec" x="'+decX+'" y="'+top+'" width="'+decW+'" height="'+decH+'" rx="4"/>';
+  s+='<text x="'+(decX+decW/2)+'" y="'+(top-12)+'" text-anchor="middle" font-size="11" font-weight="600">'+kk+'-to-'+N+' decoder</text>';
+  S.lines.forEach(function(ln,j){const y=yI(j);
+    s+='<path class="w s-ink" d="M'+(mcuX+mcuW)+' '+y+' H'+decX+'"/>';
+    s+='<text x="'+(mcuX+mcuW+6)+'" y="'+(y-4)+'" font-size="10" class="mono">A'+ln+'</text>';});
+  S.enables.forEach(function(en,j){const y=yE(j);
+    const end=en.val===0?decX-7:decX;
+    s+='<path class="w s-ink" d="M'+(mcuX+mcuW)+' '+y+' H'+end+'"/>';
+    if(en.val===0) s+='<circle class="w s-ink f-panel" cx="'+(decX-3.5)+'" cy="'+y+'" r="3.5"/>';
+    s+='<text x="'+(mcuX+mcuW+6)+'" y="'+(y-4)+'" font-size="10" class="mono">A'+en.line+'</text>';
+    s+='<text x="'+(decX+5)+'" y="'+(y+3.5)+'" font-size="9.5" font-weight="600">E</text>';
+    if(en.val===0) s+='<path class="w s-ink thin" d="M'+(decX+5)+' '+(y-6.5)+' h6.5"/>';});
+  for(let i=0;i<N;i++) s+='<text x="'+(decX+decW-5)+'" y="'+(yO(i)+3.3)+'" text-anchor="end" font-size="'+(N>16?8:9.5)+'" class="mono">Y'+i+'</text>';
+  for(let i=0;i<N;i++) if(S.owner[i]<0) s+='<path class="w s-nc" d="M'+(decX+decW)+' '+yO(i)+' H'+(decX+decW+16)+'"/>';
+  const order=S.M.slice().sort(function(a,q){return a.start-q.start;});
+  const info=order.map(function(m){
+    const o0=Math.min.apply(null,m.outs), o1=Math.max.apply(null,m.outs);
+    let sx,sy;
+    if(m.outs.length>1){
+      const y0=yO(o0)-row*0.42, y1=yO(o1)+row*0.42, ym=(y0+y1)/2, c=Math.min(9,(y1-y0)*0.3);
+      m.outs.forEach(function(o){const y=yO(o),t=(y-y0)/(y1-y0),off=2*t*(1-t)*c;
+        s+='<path class="w s-m'+(m.i+1)+'" d="M'+(decX+decW)+' '+y+' H'+(gX+off).toFixed(1)+'"/>';});
+      s+='<path class="w s-m'+(m.i+1)+' f-panel" d="M'+gX+' '+y0+' Q'+(gX+c)+' '+ym+' '+gX+' '+y1+' Q'+(gX+gW*0.55)+' '+y1+' '+(gX+gW)+' '+ym+' Q'+(gX+gW*0.55)+' '+y0+' '+gX+' '+y0+' Z"/>';
+      s+='<text x="'+(gX+c+3)+'" y="'+(ym+3)+'" font-size="8" class="mono muted">OR</text>';
+      sx=gX+gW; sy=ym;
+    } else { sx=decX+decW; sy=yO(o0); }
+    return {m:m,sx:sx,sy:sy};
+  });
+  let prev=-Infinity; const ys=[];
+  info.forEach(function(f){let y=Math.max(f.sy,prev+bH+8); if(y-bH/2<4) y=4+bH/2; ys.push(y); prev=y;});
+  info.forEach(function(f,j){const yc=ys[j], bend=352-j*7, cls='s-m'+(f.m.i+1);
+    if(Math.abs(yc-f.sy)<0.5) s+='<path class="w '+cls+'" d="M'+f.sx+' '+f.sy+' H'+bX+'"/>';
+    else s+='<path class="w '+cls+'" d="M'+f.sx+' '+f.sy+' H'+bend+' V'+yc+' H'+bX+'"/>';
+    s+=modBox(S,f.m,bX,yc,bW,bH);});
+  const H=Math.max(top+decH+14, ys[ys.length-1]+bH/2+10);
+  return '<svg class="sv" viewBox="0 0 540 '+H.toFixed(0)+'" role="img" aria-label="Decoder circuit with chip-select wiring">'+s+'</svg>';
+}
+
+function probe(S,a){
+  if(!(Number.isInteger(a)&&a>=0&&a<S.total)) return {ok:false,text:"That's outside the "+S.totalK+'K space. The last address is '+hx(S.total-1,S.digits)+'h.'};
+  const expect=S.M.find(function(m){return a>=m.start&&a<=m.end;});
+  if(S.kk===0){const m=S.M[0];return {ok:true,blk:0,mod:m.i,expect:expect,short:'CS tied high → CS1',text:'No decoder: CS1 is tied to +5 V, so M1 is always selected. Cell '+hx(a&(m.size-1),Math.ceil(m.m/4))+'h.'};}
+  for(const e of S.enables){const bit=Math.floor(a/Math.pow(2,e.line))%2; if(bit!==e.val) return {ok:true,blk:-1,mod:-1,expect:expect,short:'A'+e.line+' = '+bit+' → decoder off → nothing',text:R('A'+e.line)+' = '+bit+', so the decoder\'s enable is off: every output is 0 and no chip is selected.'};}
+  const blk=Math.floor(a/S.Bb)&((1<<S.kk)-1), o=S.owner[blk];
+  if(o<0) return {ok:true,blk:blk,mod:-1,expect:expect,short:'block '+blk+' → nothing (gap)',text:'Block '+blk+' → output '+R('Y'+blk)+', which is not connected. No chip is selected: this address is a gap.'};
+  const m=S.M[o], cell=a&(m.size-1);
+  return {ok:true,blk:blk,mod:o,expect:expect,short:'block '+blk+' → CS'+(o+1),text:'Block '+blk+' → output '+R('Y'+blk)+' → '+R('CS'+(o+1))+' goes HIGH → M'+(o+1)+' answers. On its own pins ('+R('A'+(m.m-1)+' … A0')+') it sees '+hx(cell,Math.ceil(m.m/4))+'h, so that is the cell used inside the chip.'};
+}
+function verifyHTML(S){
+  const seen=new Set(), items=[];
+  S.M.slice().sort(function(x,y){return x.start-y.start;}).forEach(function(m){
+    [m.start,m.end,m.end+1].forEach(function(a){
+      if(a>=S.total||seen.has(a)) return; seen.add(a);
+      const p=probe(S,a), good=(p.expect?p.expect.i:-1)===p.mod;
+      items.push('<li><span class="mono">'+hx(a,S.digits)+'h</span> → '+bx(p.short)+' <span class="'+(good?'okm':'bad')+'">'+(good?'✓':'✗')+'</span></li>');
+    });
+  });
+  return items.join('');
+}
+
+function reportHTML(S){
+  if(S.errors) return '<div class="err">'+S.errors.map(function(e){return '<p>'+e+'</p>';}).join('')+'</div>';
+  const N=1<<S.kk; let h='';
+  h+='<h4><span class="st">Step 1</span>Address lines</h4><p>'+S.totalK+'K = 2<sup>'+S.n+'</sup> → '+S.n+' lines, '+R('A'+(S.n-1)+' … A0')+'.</p>';
+  h+='<h4><span class="st">Step 2</span>Table</h4>'+tableHTML(S);
+  const minP=S.BK;
+  const chip=function(d){return '<span class="chip'+(d.p===minP?' min':'')+'">'+d.v+' → '+d.p+'</span>';};
+  const st=S.div.filter(function(d){return d.kind==='start';}), sz=S.div.filter(function(d){return d.kind==='size';});
+  h+='<h4><span class="st">Step 3</span>Block size and decoder</h4><p>Biggest power of 2 dividing each value (in K):</p>';
+  if(st.length) h+='<p class="note" style="margin:4px 0 0">Starts (0 skipped)</p><div class="chips">'+st.map(chip).join('')+'</div>';
+  h+='<p class="note" style="margin:4px 0 0">Sizes</p><div class="chips">'+sz.map(chip).join('')+'</div>';
+  h+='<p>The smallest is '+S.BK+' → <b>B = '+S.BK+'K = 2<sup>'+S.b+'</sup></b>. Decoder inputs: k = n − log<sub>2</sub>B = '+S.n+' − '+S.b+' = '+S.k+'.</p>';
+  if(S.kk===0) h+='<p>k = 0: one module fills the whole space, so there is no decoder. Tie CS to +5 V.</p>';
+  if(S.enables.length){
+    S.enables.forEach(function(e){h+='<p>A '+S.k+'-to-'+Math.pow(2,S.k)+' decoder is big. But every module has '+R('A'+e.line)+' = '+e.val+', so connect '+R('A'+e.line)+' to the decoder\'s enable ('+(e.val===0?'active-low: it runs only when '+R('A'+e.line)+' = 0':'active-high: it runs only when '+R('A'+e.line)+' = 1, or use a NOT gate into an active-low enable')+') and decode one line fewer.</p>';});
+  }
+  if(S.kk>0) h+='<p><b>'+S.kk+'-to-'+N+' decoder on '+R(S.lines.map(function(l){return 'A'+l;}).join(' '))+'</b>'+(S.kk>4?' (build it from 4-to-16 decoders using their enables, like 3-to-8 from two 2-to-4s).':'.')+'</p>';
+  if(S.kk>0){
+    h+='<h4><span class="st">Step 4</span>Block numbers</h4><ul>';
+    S.M.forEach(function(m){
+      const a=m.first,z=m.last;
+      h+='<li>M'+(m.i+1)+': '+m.startK+' ÷ '+S.BK+' = '+a+(a===z?'':', &nbsp;'+(m.startK+m.sizeK)+' ÷ '+S.BK+' − 1 = '+z)+' → block'+(a===z?' '+a:'s '+a+'–'+z)+(S.enables.length?' → outputs '+(m.outs.length>1?R('Y'+m.outs[0])+'–'+R('Y'+m.outs[m.outs.length-1]):R('Y'+m.outs[0])):'')+'</li>';
+    });
+    h+='</ul>';
+  }
+  h+='<h4><span class="st">Step 5</span>Chip selects</h4>';
+  S.M.forEach(function(m){
+    const orf=S.kk===0?'+5 V':orStr(m.outs), sh=sopStr(m.sop,S);
+    h+='<p class="cs">'+R('CS'+(m.i+1)+' = '+(S.kk===0?'1':orf))+(S.kk===0?' (tie to +5 V)':' <span class="alt">=</span> '+R(sh))+'</p>';
+  });
+  if(S.enables.length) h+='<p class="note">The OR form needs nothing extra: the decoder only runs when the enable condition holds. The shorter form must include it.</p>';
+  h+='<div class="mapslot">'+mapHTML(S)+'</div>';
+  h+='<h4><span class="st">Step 6</span>Circuit</h4>';
+  const svg=circuitSVG(S);
+  h+=svg?'<div class="circ">'+svg+'</div><p class="circ-cap">Not drawn: each module\'s lower lines (as labelled), '+R('D7–D0, ~RD, ~WR')+' to every module. Grey stubs are unconnected outputs.</p>':'<p class="note">The decoder has too many outputs to draw here; use the equations above.</p>';
+  h+='<h4><span class="st">Step 7</span>Verify</h4><ul class="verify">'+verifyHTML(S)+'</ul>';
+  const rot=S.M.filter(function(m){return m.rotated;});
+  if(rot.length) h+='<p class="note">'+rot.map(function(m){return 'M'+(m.i+1);}).join(', ')+(rot.length>1?' start':' starts')+' at an address that isn\'t a multiple of '+(rot.length>1?'their':'its')+' own size, so the data are stored "rotated" inside the chip. Still correct; every address reaches a different cell.</p>';
+  return h;
+}
+
+function notDown(x,y){return '<path class="w s-ink f-panel" d="M'+(x-7)+' '+y+' H'+(x+7)+' L'+x+' '+(y+14)+' Z"/><circle class="w s-ink f-panel" cx="'+x+'" cy="'+(y+17)+'" r="3"/>';}
+function logic3x8(){
+  const X={a2:64,n2:94,a1:134,n1:164,a0:204,n0:234,en:282}, yb=96+7*38+18; let s='';
+  [['A','2',X.a2,X.n2],['A','1',X.a1,X.n1],['A','0',X.a0,X.n0]].forEach(function(p){
+    const xt=p[2],xc=p[3];
+    s+='<text x="'+xt+'" y="14" text-anchor="middle" font-size="11" font-weight="600" class="mono">'+p[0]+p[1]+'</text>';
+    s+='<path class="w s-ink thin" d="M'+xt+' 20 V'+yb+'"/><path class="w s-ink thin" d="M'+xt+' 32 H'+xc+' V40"/><circle class="f-ink" cx="'+xt+'" cy="32" r="2.6"/>';
+    s+=notDown(xc,40)+'<path class="w s-ink thin" d="M'+xc+' 60 V'+yb+'"/>';
+    s+='<text x="'+(xc+5)+'" y="78" font-size="10" class="mono">'+p[0]+p[1]+'</text><path class="w s-ink thin" d="M'+(xc+5)+' 68.5 h13"/>';
+  });
+  s+='<text x="'+X.en+'" y="14" text-anchor="middle" font-size="11" font-weight="600" class="mono">E</text><path class="w s-ink thin" d="M'+(X.en-4)+' 3.5 h8"/>';
+  s+='<path class="w s-ink thin" d="M'+X.en+' 20 V40"/>'+notDown(X.en,40)+'<path class="w s-ink thin" d="M'+X.en+' 60 V'+yb+'"/>';
+  s+='<text x="'+(X.en+6)+'" y="78" font-size="10" class="mono">EN</text>';
+  for(let i=0;i<8;i++){
+    const y=96+i*38, gx=330;
+    const src=[(i>>2)&1?X.a2:X.n2,(i>>1)&1?X.a1:X.n1,i&1?X.a0:X.n0,X.en];
+    src.forEach(function(x,j){const yy=y-12+j*8;s+='<path class="w s-ink thin" d="M'+x+' '+yy+' H'+gx+'"/><circle class="f-ink" cx="'+x+'" cy="'+yy+'" r="2.4"/>';});
+    s+='<path class="w s-ink f-panel" d="M'+gx+' '+(y-16)+' H'+(gx+16)+' A16 16 0 0 1 '+(gx+16)+' '+(y+16)+' H'+gx+' Z"/>';
+    s+='<path class="w s-sig" d="M'+(gx+32)+' '+y+' H'+(gx+58)+'"/><text x="'+(gx+64)+'" y="'+(y+4)+'" font-size="11" font-weight="600" class="mono">Y'+i+'</text>';
+  }
+  return '<svg class="sv" viewBox="0 0 430 '+(yb+10)+'" role="img" aria-label="Logic diagram of a 3-to-8 decoder with active-low enable">'+s+'</svg>';
+}
+
+if(typeof document==='undefined'){ if(typeof module!=='undefined') module.exports={solve:solve,minimize:minimize,sopStr:sopStr,orStr:orStr,termStr:termStr,probe:probe,PRESETS:PRESETS,circuitSVG:circuitSVG,reportHTML:reportHTML,mapHTML:mapHTML,logic3x8:logic3x8,bx:bx}; return; }
+
+/* ---------- static conversion first ---------- */
+document.querySelectorAll('.bx').forEach(function(el){el.innerHTML=bx(el.textContent);});
+
+const cache={};
+const SOL=function(k){return cache[k]||(cache[k]=solve(PRESETS[k].total,PRESETS[k].mods));};
+document.querySelectorAll('[data-table]').forEach(function(el){el.innerHTML=tableHTML(SOL(el.dataset.table));});
+document.querySelectorAll('[data-map]').forEach(function(el){el.innerHTML=mapHTML(SOL(el.dataset.map));});
+document.querySelectorAll('[data-circuit]').forEach(function(el){el.innerHTML=circuitSVG(SOL(el.dataset.circuit))||'';});
+document.querySelectorAll('[data-verify]').forEach(function(el){el.innerHTML=verifyHTML(SOL(el.dataset.verify));});
+document.querySelectorAll('[data-report]').forEach(function(el){el.innerHTML=reportHTML(SOL(el.dataset.report));});
+
+/* 3x8 truth table + diagram */
+(function(){
+  let t='<tr><td class="c">1</td><td class="c">x</td><td class="c">x</td><td class="c">x</td>'+'<td class="c">0</td>'.repeat(8)+'</tr>';
+  for(let i=0;i<8;i++){t+='<tr><td class="c">0</td><td class="c">'+((i>>2)&1)+'</td><td class="c">'+((i>>1)&1)+'</td><td class="c">'+(i&1)+'</td>';for(let j=0;j<8;j++)t+=j===i?'<td class="c one">1</td>':'<td class="c">0</td>';t+='</tr>';}
+  document.getElementById('tt38').innerHTML=t;
+  document.getElementById('logic38').innerHTML=logic3x8();
+})();
+
+/* decoder toy */
+(function(){
+  const st={E:0,a2:1,a1:0,a0:1};
+  const btns=document.getElementById('dz-btns'), leds=document.getElementById('dz-leds'), out=document.getElementById('dz-out');
+  const defs=[['E','<span class="ov">E</span>','enable'],['a2','A<sub>2</sub>','MSB'],['a1','A<sub>1</sub>',''],['a0','A<sub>0</sub>','LSB']];
+  function render(){
+    btns.innerHTML=defs.map(function(d){return '<button type="button" class="bitbtn" data-k="'+d[0]+'" aria-pressed="'+(st[d[0]]?'true':'false')+'" aria-label="'+d[0]+' = '+st[d[0]]+'"><small>'+d[1]+'</small>'+st[d[0]]+'</button>';}).join('');
+    const i=st.a2*4+st.a1*2+st.a0, on=st.E===0;
+    let l=''; for(let j=0;j<8;j++) l+='<div class="led'+(on&&j===i?' on':'')+'">Y<sub>'+j+'</sub></div>'; leds.innerHTML=l;
+    const lit=['~A2','A2'][st.a2]+'·'+['~A1','A1'][st.a1]+'·'+['~A0','A0'][st.a0];
+    out.innerHTML=on?'<p>'+R('~E')+' = 0 → decoder enabled (EN = 1). '+R('A2A1A0')+' = '+st.a2+st.a1+st.a0+' = '+i+' → only '+R('Y'+i+' = EN·'+lit)+' is 1.</p>':'<p>'+R('~E')+' = 1 → decoder disabled (EN = 0) → every output is 0, whatever the inputs say.</p>';
+  }
+  btns.addEventListener('click',function(e){const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;st[k]=st[k]?0:1;render();const nb=btns.querySelector('[data-k="'+k+'"]');if(nb)nb.focus();});
+  render();
+})();
+
+/* splitter */
+(function(){
+  const inp=document.getElementById('sp-addr'), sel=document.getElementById('sp-size'), bits=document.getElementById('sp-bits'), out=document.getElementById('sp-out');
+  function render(){
+    const raw=inp.value.trim().replace(/h$/i,''), m=+sel.value, top=16-m;
+    if(!/^[0-9a-fA-F]{1,4}$/.test(raw)){bits.innerHTML='';out.innerHTML='<p class="note">Type 1 to 4 hex digits, like 4ABC.</p>';return;}
+    const a=parseInt(raw,16);
+    let h='<div class="nibrow">';
+    for(let n=3;n>=0;n--){h+='<div class="nib">';for(let q=3;q>=0;q--){const ln=n*4+q,bit=(a>>ln)&1;h+='<div class="bitcell'+(ln>=m?' hi':'')+'">'+bit+'<span class="ln">A'+ln+'</span></div>';}h+='</div>';}
+    bits.innerHTML=h+'</div>';
+    const Q=a>>m, Rm=a&((1<<m)-1), qb=Q.toString(2).padStart(top,'0');
+    const tl=[];for(let ln=15;ln>=m;ln--)tl.push('A'+ln);
+    out.innerHTML='<p><b>Top '+top+' bit'+(top>1?'s':'')+'</b> ('+R(tl.join(' '))+') = '+qb+' = '+Q+' → slot '+Q+' → decoder output '+R('Y'+Q)+'.</p><p><b>Low '+m+' bits</b> ('+R('A'+(m-1)+' … A0')+') = '+hx(Rm,4)+'h → cell '+hx(Rm,4)+'h inside that slot.</p><p class="mono">'+hx(a,4)+'h = '+Q+' × '+hx(1<<m,4)+'h + '+hx(Rm,4)+'h</p>';
+  }
+  inp.addEventListener('input',render); sel.addEventListener('change',render); render();
+})();
+
+/* machine */
+(function(){
+  const pre=document.getElementById('m-preset'), tot=document.getElementById('m-total'), rowsEl=document.getElementById('m-rows'), out=document.getElementById('m-out'), add=document.getElementById('m-add'), addr=document.getElementById('m-addr'), pout=document.getElementById('m-probe');
+  const groups=[['Past papers',['s21','t22','s22','s23']],['Class examples',['c4','c2']],['Practice',['pa','pb','pc','pd']]];
+  pre.innerHTML=groups.map(function(g){return '<optgroup label="'+g[0]+'">'+g[1].map(function(k){return '<option value="'+k+'">'+PRESETS[k].name+'</option>';}).join('')+'</optgroup>';}).join('')+'<option value="custom">Custom (your edits)</option>';
+  const st={total:64,rows:[]}; let S=null;
+  function load(k){const p=PRESETS[k];st.total=p.total;st.rows=p.mods.map(function(r){return r.slice();});tot.value=String(p.total);pre.value=k;renderRows();run();addr.value=hx(p.mods[p.mods.length>1?1:0][1]*1024+0x0123,Math.ceil((10+lg(p.total))/4));doProbe();}
+  function renderRows(){
+    const sizes=[1,2,4,8,16,32,64,128].filter(function(s){return s<=st.total;});
+    rowsEl.innerHTML=st.rows.map(function(r,i){
+      return '<div class="mrow"><span class="mtag m'+(i+1)+'">M'+(i+1)+'</span>'+
+      '<label class="fld">Size<select id="m-size-'+i+'" data-i="'+i+'" data-f="0">'+sizes.map(function(s){return '<option value="'+s+'"'+(s===r[0]?' selected':'')+'>'+s+'K</option>';}).join('')+(sizes.indexOf(r[0])<0?'<option value="'+r[0]+'" selected>'+r[0]+'K</option>':'')+'</select></label>'+
+      '<label class="fld">Start (K)<input id="m-start-'+i+'" type="number" inputmode="numeric" min="0" step="1" value="'+r[1]+'" data-i="'+i+'" data-f="1"></label>'+
+      '<button type="button" class="xbtn" data-del="'+i+'" aria-label="Remove M'+(i+1)+'">×</button></div>';
+    }).join('');
+    add.disabled=st.rows.length>=6;
+  }
+  function run(){S=solve(st.total,st.rows);out.innerHTML=reportHTML(S);}
+  function doProbe(){
+    if(!S||S.errors){pout.innerHTML='<span class="note">Fix the inputs above first.</span>';return;}
+    const raw=addr.value.trim().replace(/h$/i,'');
+    if(!/^[0-9a-fA-F]{1,5}$/.test(raw)){pout.innerHTML='<span class="note">Type a hex address, like 5F00.</span>';return;}
+    const a=parseInt(raw,16), p=probe(S,a);
+    pout.innerHTML='<b class="mono">'+hx(a,S.digits)+'h</b>: '+p.text;
+    const slot=out.querySelector('.mapslot'); if(slot) slot.innerHTML=mapHTML(S,p.ok?p.blk:undefined);
+  }
+  rowsEl.addEventListener('input',function(e){const t=e.target;if(t.dataset.i===undefined)return;const i=+t.dataset.i,f=+t.dataset.f;st.rows[i][f]=t.value===''?NaN:Number(t.value);pre.value='custom';run();doProbe();});
+  rowsEl.addEventListener('change',function(e){const t=e.target;if(t.tagName!=='SELECT')return;const i=+t.dataset.i;st.rows[i][0]=Number(t.value);pre.value='custom';run();doProbe();});
+  rowsEl.addEventListener('click',function(e){const b=e.target.closest('[data-del]');if(!b)return;st.rows.splice(+b.dataset.del,1);pre.value='custom';renderRows();run();doProbe();});
+  add.addEventListener('click',function(){if(st.rows.length>=6)return;let pick=null;[4,2,1].some(function(size){for(let a=0;a+size<=st.total;a+=size){if(st.rows.every(function(r){return !(Number.isFinite(r[1])&&a<r[1]+r[0]&&r[1]<a+size);})){pick=[size,a];return true;}}return false;});st.rows.push(pick||[1,0]);pre.value='custom';renderRows();run();doProbe();});
+  tot.addEventListener('change',function(){st.total=+tot.value;pre.value='custom';renderRows();run();doProbe();});
+  pre.addEventListener('change',function(){if(pre.value!=='custom')load(pre.value);});
+  addr.addEventListener('input',doProbe);
+  document.querySelectorAll('[data-load]').forEach(function(b){b.addEventListener('click',function(){load(b.dataset.load);document.getElementById('machine').scrollIntoView({behavior:'smooth'});});});
+  load('t22');
+})();
+})();
+</script>
+
+</body>
+</html>

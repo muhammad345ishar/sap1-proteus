@@ -21,6 +21,11 @@ Malvino's **Simple-As-Possible (SAP-1)** 8-bit computer, built from 74LS-series 
 |---|---|
 | [DLD Terminal 2025, Solved](https://muhammad345ishar.github.io/sap1-proteus/dld-terminal-2025.html) | Worked answers to the 1 Jan 2025 Digital Logic Design terminal paper, with diagrams |
 
+## Topic guides
+| Page | What it covers |
+|---|---|
+| [8051 Memory Interfacing](https://muhammad345ishar.github.io/sap1-proteus/8051-memory-interfacing.html) | Decoders and chip selects from first principles, the Block Method, all past-paper chip-select questions solved, and an interactive solver |
+
 ## The machine
 - 8-bit W bus, 4-bit program counter and MAR, 16 bytes of memory
 - 5 instructions: `LDA`, `ADD`, `SUB`, `OUT`, `HLT`, with 6 T-states each
